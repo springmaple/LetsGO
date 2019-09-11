@@ -21,7 +21,9 @@ msgpack==0.6.1
 protobuf==3.8.0
 pyasn1==0.4.5
 pyasn1-modules==0.2.5
+pypiwin32==223
 pytz==2019.1
+pywin32==224
 requests==2.22.0
 rsa==4.0
 six==1.12.0

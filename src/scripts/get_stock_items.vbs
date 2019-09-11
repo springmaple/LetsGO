@@ -1,4 +1,4 @@
-Call GetAllData
+Call Main
  
 Function CreateSQLAccServer
   Set CreateSQLAccServer = CreateObject("SQLAcc.BizApp")
@@ -16,7 +16,7 @@ Function Login(ByRef ComServer)
   END IF
 End Function
 
-Function GetAllData
+Function Main
   Dim ComServer, lDateFrom, lDateTo
 
   Set ComServer = CreateSQLAccServer 'Create Com Server
@@ -25,11 +25,11 @@ Function GetAllData
 
   Call Login(ComServer)
 
-  Call GetItems(ComServer, lDateFrom, lDateTo)
+  Call GetStocks(ComServer, lDateFrom, lDateTo)
   Call GetCustomers(ComServer, lDateFrom, lDateTo)
 End Function
 
-Function GetItems(ByRef ComServer, ByRef lDateFrom, ByRef lDateTo)
+Function GetStocks(ByRef ComServer, ByRef lDateFrom, ByRef lDateTo)
   Dim RptObject, lDataSet1
 
   Set RptObject = ComServer.RptObjects.Find("Stock.Item.RO") 
