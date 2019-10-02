@@ -45,6 +45,12 @@ def start():
         doc_ref = db.document(f'customers/{_escape_key(customer_code)}')
         doc_ref.set(customer.to_dict())
 
+    # Agent
+    for agent in sql.get_agents():
+        print(f'Uploading agent {_escape_key(agent.code)}')
+        doc_ref = db.document(f'agents/{_escape_key(agent.code)}')
+        doc_ref.set(agent.to_dict())
+
 
 with Sql() as sql:
     sql.login()

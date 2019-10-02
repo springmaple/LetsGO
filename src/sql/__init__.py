@@ -1,6 +1,7 @@
 import win32com.client
 
 from sql import util
+from sql.entity.agent import Agent
 from sql.entity.customer import Customer
 from sql.entity.customer_branch import CustomerBranch
 from sql.entity.stock_item import StockItem
@@ -56,3 +57,8 @@ class Sql:
         data_set = self._com.DBManager.NewDataSet("SELECT * FROM AR_CUSTOMERBRANCH")
         for data in util.loop_data_sets(data_set):
             yield CustomerBranch(data)
+
+    def get_agents(self):
+        data_set = self._com.DBManager.NewDataSet("SELECT * FROM AGENT")
+        for data in util.loop_data_sets(data_set):
+            yield Agent(data)
