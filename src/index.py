@@ -1,6 +1,8 @@
 from firestore import get_firestore_instance
 from sql import Sql
 
+COMPANY_CODE = 'test'
+
 
 def _escape_key(key: str):
     return key.replace('/', '_')
@@ -17,13 +19,13 @@ def _upload_master_data(fs, sql):
 
     for stock_code, stock in stocks.items():
         print(f'Uploading stock {_escape_key(stock_code)}')
-        doc_ref = fs.document(f'items/{_escape_key(stock_code)}')
+        doc_ref = fs.document(f'data/{COMPANY_CODE}/items/{_escape_key(stock_code)}')
         doc_ref.set(stock.to_dict())
 
     # Item groups
     for group in sql.get_stock_groups():
         print(f'Uploading stock group {_escape_key(group.code)}')
-        doc_ref = fs.document(f'itemGroups/{_escape_key(group.code)}')
+        doc_ref = fs.document(f'data/{COMPANY_CODE}/itemGroups/{_escape_key(group.code)}')
         doc_ref.set(group.to_dict())
 
     # Customer
@@ -36,13 +38,13 @@ def _upload_master_data(fs, sql):
 
     for customer_code, customer in customers.items():
         print(f'Uploading customer {_escape_key(customer_code)}')
-        doc_ref = fs.document(f'customers/{_escape_key(customer_code)}')
+        doc_ref = fs.document(f'data/{COMPANY_CODE}/customers/{_escape_key(customer_code)}')
         doc_ref.set(customer.to_dict())
 
     # Agent
     for agent in sql.get_agents():
         print(f'Uploading agent {_escape_key(agent.code)}')
-        doc_ref = fs.document(f'agents/{_escape_key(agent.code)}')
+        doc_ref = fs.document(f'data/{COMPANY_CODE}/agents/{_escape_key(agent.code)}')
         doc_ref.set(agent.to_dict())
 
 
@@ -54,7 +56,7 @@ def upload_master_data():
 
 
 def _get_sales_orders(fs):
-    for doc in fs.collection("salesOrders").stream():
+    for doc in fs.collection(f'data/{COMPANY_CODE}/salesOrders').stream():
         print(doc.id, doc.to_dict())
         with Sql() as sql:
             sql.login()
@@ -62,5 +64,5 @@ def _get_sales_orders(fs):
         break
 
 
-# upload_master_data()
-_get_sales_orders(get_firestore_instance())
+upload_master_data()
+# _get_sales_orders(get_firestore_instance())
