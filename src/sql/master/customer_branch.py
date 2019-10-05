@@ -1,4 +1,4 @@
-from sql.entity import Entity
+from sql.master import Entity
 
 
 class CustomerBranch(Entity):
@@ -6,6 +6,7 @@ class CustomerBranch(Entity):
         super().__init__(data)
         self.customer_code = self._get_str('Code')  # Primary Key
         self.name = self._get_str('BranchName')  # Primary Key
+        self.attention = self._get_str('Attention')
         self.location = [
             self._get_decimal('GeoLat'),
             self._get_decimal('GeoLong')

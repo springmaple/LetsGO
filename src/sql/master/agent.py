@@ -1,4 +1,4 @@
-from sql.entity import Entity
+from sql.master import Entity
 
 
 class Agent(Entity):

@@ -1,6 +1,4 @@
-import firebase_admin
-from firebase_admin import credentials, firestore
-
+from firestore import get_firestore_instance
 from sql import Sql
 
 
@@ -8,11 +6,7 @@ def _escape_key(key: str):
     return key.replace('/', '_')
 
 
-def upload_master_data():
-    cred = credentials.Certificate('../res/serviceAccount.json')
-    firebase_admin.initialize_app(cred)
-    db = firestore.client()
-
+def _upload_master_data(fs, sql):
     # Stock items
     stocks = {}
     for stock in sql.get_stock_items():
@@ -23,13 +17,13 @@ def upload_master_data():
 
     for stock_code, stock in stocks.items():
         print(f'Uploading stock {_escape_key(stock_code)}')
-        doc_ref = db.document(f'items/{_escape_key(stock_code)}')
+        doc_ref = fs.document(f'items/{_escape_key(stock_code)}')
         doc_ref.set(stock.to_dict())
 
     # Item groups
     for group in sql.get_stock_groups():
         print(f'Uploading stock group {_escape_key(group.code)}')
-        doc_ref = db.document(f'itemGroups/{_escape_key(group.code)}')
+        doc_ref = fs.document(f'itemGroups/{_escape_key(group.code)}')
         doc_ref.set(group.to_dict())
 
     # Customer
@@ -42,16 +36,31 @@ def upload_master_data():
 
     for customer_code, customer in customers.items():
         print(f'Uploading customer {_escape_key(customer_code)}')
-        doc_ref = db.document(f'customers/{_escape_key(customer_code)}')
+        doc_ref = fs.document(f'customers/{_escape_key(customer_code)}')
         doc_ref.set(customer.to_dict())
 
     # Agent
     for agent in sql.get_agents():
         print(f'Uploading agent {_escape_key(agent.code)}')
-        doc_ref = db.document(f'agents/{_escape_key(agent.code)}')
+        doc_ref = fs.document(f'agents/{_escape_key(agent.code)}')
         doc_ref.set(agent.to_dict())
 
 
-with Sql() as sql:
-    sql.login()
-    upload_master_data()
+def upload_master_data():
+    fs = get_firestore_instance()
+    with Sql() as sql:
+        sql.login()
+        _upload_master_data(fs, sql)
+
+
+def _get_sales_orders(fs):
+    for doc in fs.collection("salesOrders").stream():
+        print(doc.id, doc.to_dict())
+        with Sql() as sql:
+            sql.login()
+            sql.set_sales_order(doc.to_dict())
+        break
+
+
+# upload_master_data()
+_get_sales_orders(get_firestore_instance())
