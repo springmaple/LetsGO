@@ -85,7 +85,7 @@ class Sql:
         main_data.FindField('DocDate').value = today
         main_data.FindField('PostDate').value = today
         main_data.FindField('Agent').AsString = agent['code']
-        main_data.FindField('Description').AsString = "Sales Order"
+        main_data.FindField('Description').AsString = so['description']
 
         # Customer
         main_data.FindField('Code').AsString = customer['code']  # Customer Account
