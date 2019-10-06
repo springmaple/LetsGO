@@ -56,13 +56,12 @@ def upload_master_data():
 
 
 def _get_sales_orders(fs):
-    for doc in fs.collection(f'data/{COMPANY_CODE}/salesOrders').stream():
-        print(doc.id, doc.to_dict())
-        with Sql() as sql:
+    with Sql() as sql:
+        for doc in fs.collection(f'data/{COMPANY_CODE}/salesOrders').stream():
+            print(f'Syncing sales order {doc.id}')
             sql.login()
             sql.set_sales_order(doc.to_dict())
-        break
 
 
-upload_master_data()
-# _get_sales_orders(get_firestore_instance())
+# upload_master_data()
+_get_sales_orders(get_firestore_instance())

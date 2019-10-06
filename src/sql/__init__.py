@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, tzinfo
 from decimal import Decimal
 
 import win32com.client
@@ -71,18 +71,18 @@ class Sql:
         main_data = biz_object.DataSets.Find("MainDataSet")
         detail_data = biz_object.DataSets.Find("cdsDocDetail")
 
-        today = datetime(2018, 2, 22, 13, 0)
-        today.strftime('%m/%d/%Y')
-
         agent = so['agent']
         customer = so['customer']
         bill_to = so['bill_to']
         ship_to = so['ship_to']
 
+        today = datetime.now(tz=CustomTimeZone())
+        doc_date = datetime.fromtimestamp(so['created_on'], tz=CustomTimeZone())
+
         biz_object.New()
         main_data.FindField('DocKey').value = -1
         main_data.FindField('DocNo').AsString = so['code']
-        main_data.FindField('DocDate').value = today
+        main_data.FindField('DocDate').value = doc_date
         main_data.FindField('PostDate').value = today
         main_data.FindField('Agent').AsString = agent['code']
         main_data.FindField('Description').AsString = so['description']
@@ -131,3 +131,11 @@ class Sql:
 
         biz_object.Save()
         biz_object.Close()
+
+
+class CustomTimeZone(tzinfo):
+    def utcoffset(self, dt):
+        return timedelta(hours=8)
+
+    def dst(self, dt):
+        return timedelta(hours=8)
