@@ -8,7 +8,7 @@ class DictEncoder(json.JSONEncoder):
         if type(obj) == datetime.date:
             return obj.strftime('%Y-%m-%d')
         if type(obj) == decimal.Decimal:
-            return str(obj)
+            return "0" if obj == decimal.Decimal(0) else str(obj)
         if isinstance(obj, Entity):
             return obj.to_dict()
         return json.JSONEncoder.default(self, obj)
@@ -21,8 +21,12 @@ class Entity:
     def _get_str(self, field_name):
         return self._data.FindField(field_name).AsString
 
-    def _get_decimal(self, field_name):
+    def _get_decimal(self, field_name) -> decimal.Decimal:
         return self._data.FindField(field_name).AsCurrency
+
+    def _get_currency(self, field_name) -> decimal.Decimal:
+        currency = self._get_decimal(field_name)
+        return currency.quantize(decimal.Decimal('.01'))
 
     def _get_int(self, field_name):
         val = self._data.FindField(field_name).AsString

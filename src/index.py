@@ -63,5 +63,5 @@ def _get_sales_orders(fs):
             sql.set_sales_order(doc.to_dict())
 
 
-# upload_master_data()
-_get_sales_orders(get_firestore_instance())
+upload_master_data()
+# _get_sales_orders(get_firestore_instance())
