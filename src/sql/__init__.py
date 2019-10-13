@@ -12,18 +12,25 @@ from sql.master.stock_item_group import StockItemGroup
 from sql.master.stock_item_uom import StockItemUom
 
 
+class SqlCredential:
+    def __init__(self, sql_id, sql_password, sql_dcf, sql_fdb):
+        self.sql_id = sql_id
+        self.sql_password = sql_password
+        self.sql_dcf = sql_dcf
+        self.sql_fdb = sql_fdb
+
+
 class Sql:
-    def __init__(self,
-                 acc_id='ADMIN',
-                 acc_password='ADMIN',
-                 acc_dcf=r'C:\eStream\SQLAccounting\Share\Default.DCF',
-                 acc_fdb='ACC-0001.FDB'):
+    def __init__(self, sql_crendential: SqlCredential):
         self._com = win32com.client.Dispatch("SQLAcc.BizApp")
 
         # Use this for util.print_members
         # self._com = win32com.client.gencache.EnsureDispatch("SQLAcc.BizApp")
 
-        self._credential = (acc_id, acc_password, acc_dcf, acc_fdb)
+        self._credential = (sql_crendential.sql_id,
+                            sql_crendential.sql_password,
+                            sql_crendential.sql_dcf,
+                            sql_crendential.sql_fdb)
 
     def __enter__(self):
         return self
