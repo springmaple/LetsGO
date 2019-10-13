@@ -90,4 +90,3 @@ if __name__ == '__main__':
         start()
     except:
         traceback.print_exc()
-    input('Press ENTER to continue...')
