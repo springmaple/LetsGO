@@ -11,3 +11,4 @@ class Customer(Entity):
         self.credit_terms = self._get_str('CreditTerm')
         self.currency_code = self._get_str('CurrencyCode')
         self.branch = []
+        self.last_modified = self._get_int('LastModified')

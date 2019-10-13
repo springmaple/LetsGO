@@ -43,28 +43,51 @@ class Sql:
             self._com.Logout()
         self._com.Login(*self._credential)
 
-    def get_stock_groups(self):
-        data_set = self._com.DBManager.NewDataSet('SELECT * FROM ST_GROUP')
+    def get_stock_groups(self, since):
+        if since <= 0:
+            where = ' WHERE LASTMODIFIED > 0 OR LASTMODIFIED IS NULL'
+        else:
+            where = f' WHERE LASTMODIFIED > {since}'
+
+        order_by = ' ORDER BY LASTMODIFIED ASC'
+
+        data_set = self._com.DBManager.NewDataSet(
+            'SELECT * FROM ST_GROUP' + where + order_by)
         for data in util.loop_data_sets(data_set):
             yield StockItemGroup(data)
 
-    def get_stock_items(self):
-        data_set = self._com.DBManager.NewDataSet("SELECT * FROM ST_ITEM")
+    def get_stock_items(self, since):
+        if since <= 0:
+            where = ' WHERE LASTMODIFIED > 0 OR LASTMODIFIED IS NULL'
+        else:
+            where = f' WHERE LASTMODIFIED > {since}'
+
+        order_by = ' ORDER BY LASTMODIFIED ASC'
+
+        data_set = self._com.DBManager.NewDataSet(
+            'SELECT * FROM ST_ITEM' + where + order_by)
         for data in util.loop_data_sets(data_set):
             yield StockItem(data)
 
-    def get_stock_item_uom(self):
-        data_set = self._com.DBManager.NewDataSet("SELECT * FROM ST_ITEM_UOM")
+    def get_stock_item_uom(self, code):
+        data_set = self._com.DBManager.NewDataSet(f"SELECT * FROM ST_ITEM_UOM WHERE CODE='{code}'")
         for data in util.loop_data_sets(data_set):
             yield StockItemUom(data)
 
-    def get_customers(self):
-        data_set = self._com.DBManager.NewDataSet("SELECT * FROM AR_CUSTOMER")
+    def get_customers(self, since):
+        if since <= 0:
+            where = ' WHERE LASTMODIFIED > 0 OR LASTMODIFIED IS NULL'
+        else:
+            where = f' WHERE LASTMODIFIED > {since}'
+
+        order_by = ' ORDER BY LASTMODIFIED ASC'
+
+        data_set = self._com.DBManager.NewDataSet("SELECT * FROM AR_CUSTOMER" + where + order_by)
         for data in util.loop_data_sets(data_set):
             yield Customer(data)
 
-    def get_customer_branch(self):
-        data_set = self._com.DBManager.NewDataSet("SELECT * FROM AR_CUSTOMERBRANCH")
+    def get_customer_branch(self, code):
+        data_set = self._com.DBManager.NewDataSet(f"SELECT * FROM AR_CUSTOMERBRANCH WHERE CODE='{code}'")
         for data in util.loop_data_sets(data_set):
             yield CustomerBranch(data)
 

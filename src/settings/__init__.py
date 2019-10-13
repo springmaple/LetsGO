@@ -25,18 +25,18 @@ class Settings:
                     profile['sql_fdb']
                 )
 
-    def get_last_sales_order(self, company_code: str) -> int:
+    def get_last_sync_prop(self, company_code: str, prop_name: str) -> int:
         for profile in self._settings['profiles']:
             if profile['company_code'] == company_code:
-                if 'last_sales_order_timestamp' in profile:
-                    return profile['last_sales_order_timestamp']
+                if prop_name in profile:
+                    return profile[prop_name]
                 break
         return 0
 
-    def set_last_sales_order(self, company_code: str, timestamp: int):
+    def set_last_sync_prop(self, company_code: str, prop_name: str, timestamp: int):
         for profile in self._settings['profiles']:
             if profile['company_code'] == company_code:
-                profile['last_sales_order_timestamp'] = timestamp
+                profile[prop_name] = timestamp
                 return
 
     def save(self):

@@ -3,56 +3,59 @@ from firestore import get_firestore_instance
 from settings import Settings
 from sql import Sql
 
+_LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
+_LAST_STOCK_GROUP_TIMESTAMP = 'last_stock_group_timestamp'
 
-def _upload_master_data(fs, sql: Sql, company_code: str):
+
+def _upload_master_data(fs, sql: Sql, company_code: str, settings: Settings):
     # Stock items
     stocks = {}
-    for stock in sql.get_stock_items():
+    for stock in sql.get_stock_items(since=0):  # Updating UOM will not reflect on LASTMODIFIED
         stocks[stock.code] = stock
-
-    for uom in sql.get_stock_item_uom():
-        stocks[uom.code].uom.append(uom)
+        for uom in sql.get_stock_item_uom(stock.code):
+            stock.uom.append(uom)
 
     for stock_code, stock in stocks.items():
         doc_ref = fs.document(f'data/{company_code}/items/{util.esc_key(stock_code)}')
-        print(f'Uploaded stock {util.esc_key(stock_code)}')
         doc_ref.set(stock.to_dict())
+        print(f'Uploaded stock {util.esc_key(stock_code)}')
 
     # Item groups
-    for group in sql.get_stock_groups():
+    for group in sql.get_stock_groups(settings.get_last_sync_prop(company_code, _LAST_STOCK_GROUP_TIMESTAMP)):
         doc_ref = fs.document(f'data/{company_code}/itemGroups/{util.esc_key(group.code)}')
-        print(f'Uploaded stock group {util.esc_key(group.code)}')
         doc_ref.set(group.to_dict())
+        settings.set_last_sync_prop(company_code, _LAST_STOCK_GROUP_TIMESTAMP, group.last_modified)
+        settings.save()
+        print(f'Uploaded stock group {util.esc_key(group.code)}')
 
     # Customer
     customers = {}
-    for customer in sql.get_customers():
+    for customer in sql.get_customers(since=0):  # Updating branch will not reflect on LASTMODIFIED
         customers[customer.code] = customer
-
-    for branch in sql.get_customer_branch():
-        customers[branch.customer_code].branch.append(branch)
+        for branch in sql.get_customer_branch(customer.code):
+            customer.branch.append(branch)
 
     for customer_code, customer in customers.items():
         doc_ref = fs.document(f'data/{company_code}/customers/{util.esc_key(customer_code)}')
-        print(f'Uploaded customer {util.esc_key(customer_code)}')
         doc_ref.set(customer.to_dict())
+        print(f'Uploaded customer {util.esc_key(customer_code)}')
 
     # Agent
     for agent in sql.get_agents():
         doc_ref = fs.document(f'data/{company_code}/agents/{util.esc_key(agent.code)}')
-        print(f'Uploaded agent {util.esc_key(agent.code)}')
         doc_ref.set(agent.to_dict())
+        print(f'Uploaded agent {util.esc_key(agent.code)}')
 
 
 def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
     def save_checkpoint():
-        settings.set_last_sales_order(company_code, sales_order[sync_key])
+        settings.set_last_sync_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP, sales_order[sync_key])
         settings.save()
 
     sync_key = 'created_on'
 
     for doc in fs.collection(f'data/{company_code}/salesOrders') \
-            .where(sync_key, '>', settings.get_last_sales_order(company_code)) \
+            .where(sync_key, '>', settings.get_last_sync_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP)) \
             .order_by(sync_key) \
             .stream():
         sales_order = doc.to_dict()
@@ -77,7 +80,7 @@ def start():
             print(f'Switching to company "{company_code}"')
             sql.login()
             _get_sales_orders(fs, sql, company_code, settings)
-            _upload_master_data(fs, sql, company_code)
+            _upload_master_data(fs, sql, company_code, settings)
 
 
 if __name__ == '__main__':
