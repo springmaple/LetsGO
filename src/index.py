@@ -1,3 +1,5 @@
+import traceback
+
 import util
 from firestore import get_firestore_instance
 from settings import Settings
@@ -84,4 +86,8 @@ def start():
 
 
 if __name__ == '__main__':
-    start()
+    try:
+        start()
+    except:
+        traceback.print_exc()
+    input('Press ENTER to continue...')
