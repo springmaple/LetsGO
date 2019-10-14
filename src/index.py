@@ -1,3 +1,4 @@
+import sys
 import traceback
 
 import util
@@ -74,19 +75,29 @@ def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
             print(f'Downloaded sales order {doc.id}')
 
 
-def start():
+def start(master: bool, sales_order: bool):
     settings = Settings()
     fs = get_firestore_instance()
     for company_code in settings.list_company_codes():
         with Sql(settings.get_sql_credential(company_code)) as sql:
             print(f'Switching to company "{company_code}"')
             sql.login()
-            _get_sales_orders(fs, sql, company_code, settings)
-            _upload_master_data(fs, sql, company_code, settings)
+            if sales_order:
+                _get_sales_orders(fs, sql, company_code, settings)
+            if master:
+                _upload_master_data(fs, sql, company_code, settings)
 
 
 if __name__ == '__main__':
     try:
-        start()
+        arg = sys.argv[1]
+        if arg == 'all':
+            start(True, True)
+        elif arg == 'sales_order':
+            start(False, True)
+        else:
+            start(True, True)
+        print('OK...')
     except:
         traceback.print_exc()
+        print('ERROR...')
