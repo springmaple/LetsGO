@@ -1,4 +1,4 @@
-from sql.master import Entity
+from sql.master import Entity, Keywords
 
 
 class StockItem(Entity):
@@ -13,3 +13,4 @@ class StockItem(Entity):
         self.created_on = self._get_date('CreationDate')
         self.last_modified = self._get_int('LastModified')
         self.uom = []
+        self.keywords = Keywords(self.code, self.description)

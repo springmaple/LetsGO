@@ -1,4 +1,4 @@
-from sql.master import Entity
+from sql.master import Entity, Keywords
 
 
 class Customer(Entity):
@@ -12,3 +12,4 @@ class Customer(Entity):
         self.currency_code = self._get_str('CurrencyCode')
         self.branch = []
         self.last_modified = self._get_int('LastModified')
+        self.keywords = Keywords(self.code, self.company_name)
