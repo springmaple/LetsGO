@@ -62,6 +62,12 @@ class Entity:
                          if not item[0].startswith('_'))
 
 
+class Total(Entity):
+    def __init__(self, data):
+        super().__init__(data)
+        self.total = self._get_int('Total')
+
+
 class Keywords:
     def __init__(self, *original_texts):
         self._original_texts = original_texts

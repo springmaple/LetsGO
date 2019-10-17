@@ -5,9 +5,7 @@
       "sql_id": "ADMIN",
       "sql_password": "ADMIN",
       "sql_dcf": "C:\\eStream\\SQLAccounting\\Share\\Default.DCF",
-      "sql_fdb": "ACC-0001.FDB",
-      "last_sales_order_timestamp": 1570907998,
-      "last_stock_group_timestamp": 1570957393
+      "sql_fdb": "ACC-0001.FDB"
     }
   ]
 }

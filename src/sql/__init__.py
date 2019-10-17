@@ -4,12 +4,15 @@ from decimal import Decimal
 import win32com.client
 
 from sql import util
+from sql.master import Total
 from sql.master.agent import Agent
 from sql.master.customer import Customer
 from sql.master.customer_branch import CustomerBranch
 from sql.master.stock_item import StockItem
 from sql.master.stock_item_group import StockItemGroup
 from sql.master.stock_item_uom import StockItemUom
+
+_LOAD_MASTER_PAGE_SIZE = 50
 
 
 class SqlCredential:
@@ -43,35 +46,25 @@ class Sql:
             self._com.Logout()
         self._com.Login(*self._credential)
 
-    def get_stock_groups(self):
-        data_set = self._com.DBManager.NewDataSet('SELECT * FROM ST_GROUP')
+    def count_master_data(self, table_name):
+        data_set = self._com.DBManager.NewDataSet(f'SELECT COUNT(*) AS Total FROM {table_name}')
         for data in util.loop_data_sets(data_set):
-            yield StockItemGroup(data)
+            return Total(data).total
+        return 0
 
-    def get_stock_items(self):
-        data_set = self._com.DBManager.NewDataSet('SELECT * FROM ST_ITEM')
-        for data in util.loop_data_sets(data_set):
-            yield StockItem(data)
+    def get_master_data(self, table_name, total, converter):
+        offset = 1
+        while offset <= total:
+            data_set = self._com.DBManager.NewDataSet(
+                f'SELECT * FROM {table_name} ROWS {offset} TO {offset + _LOAD_MASTER_PAGE_SIZE}')
+            for data in util.loop_data_sets(data_set):
+                yield converter(data)
+            offset += _LOAD_MASTER_PAGE_SIZE + 1
 
-    def get_stock_item_uom(self, code):
-        data_set = self._com.DBManager.NewDataSet(f"SELECT * FROM ST_ITEM_UOM WHERE CODE='{code}'")
+    def get_master_detail_by_code(self, table_name, code, converter):
+        data_set = self._com.DBManager.NewDataSet(f"SELECT * FROM {table_name} WHERE CODE='{code}'")
         for data in util.loop_data_sets(data_set):
-            yield StockItemUom(data)
-
-    def get_customers(self):
-        data_set = self._com.DBManager.NewDataSet('SELECT * FROM AR_CUSTOMER')
-        for data in util.loop_data_sets(data_set):
-            yield Customer(data)
-
-    def get_customer_branch(self, code):
-        data_set = self._com.DBManager.NewDataSet(f"SELECT * FROM AR_CUSTOMERBRANCH WHERE CODE='{code}'")
-        for data in util.loop_data_sets(data_set):
-            yield CustomerBranch(data)
-
-    def get_agents(self):
-        data_set = self._com.DBManager.NewDataSet("SELECT * FROM AGENT")
-        for data in util.loop_data_sets(data_set):
-            yield Agent(data)
+            yield converter(data)
 
     def set_sales_order(self, so: dict):
         biz_object = self._com.BizObjects.Find("SL_SO")
