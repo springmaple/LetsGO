@@ -2,6 +2,6 @@
 SET CURRENT_DIR=%cd%
 SET SCRIPT_DIR=%~dp0
 CD /D %SCRIPT_DIR%
-python index.py all
+python index.py
 CD /D %CURRENT_DIR%
 PAUSE

@@ -1,4 +1,3 @@
-import sys
 import traceback
 
 import util
@@ -13,7 +12,7 @@ _LAST_STOCK_GROUP_TIMESTAMP = 'last_stock_group_timestamp'
 def _upload_master_data(fs, sql: Sql, company_code: str, settings: Settings):
     # Stock items
     stocks = {}
-    for stock in sql.get_stock_items(since=0):  # Updating UOM will not reflect on LASTMODIFIED
+    for stock in sql.get_stock_items():
         stocks[stock.code] = stock
         for uom in sql.get_stock_item_uom(stock.code):
             stock.uom.append(uom)
@@ -24,16 +23,15 @@ def _upload_master_data(fs, sql: Sql, company_code: str, settings: Settings):
         print(f'Uploaded stock {util.esc_key(stock_code)}')
 
     # Item groups
-    for group in sql.get_stock_groups(settings.get_last_sync_prop(company_code, _LAST_STOCK_GROUP_TIMESTAMP)):
+    for group in sql.get_stock_groups():
         doc_ref = fs.document(f'data/{company_code}/itemGroups/{util.esc_key(group.code)}')
         doc_ref.set(group.to_dict())
-        settings.set_last_sync_prop(company_code, _LAST_STOCK_GROUP_TIMESTAMP, group.last_modified)
         settings.save()
         print(f'Uploaded stock group {util.esc_key(group.code)}')
 
     # Customer
     customers = {}
-    for customer in sql.get_customers(since=0):  # Updating branch will not reflect on LASTMODIFIED
+    for customer in sql.get_customers():
         customers[customer.code] = customer
         for branch in sql.get_customer_branch(customer.code):
             customer.branch.append(branch)
@@ -65,7 +63,7 @@ def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
         try:
             sql.set_sales_order(sales_order)
         except Exception as ex:
-            if "attempt to store duplicate value" in str(ex):
+            if 'attempt to store duplicate value' in str(ex):
                 save_checkpoint()
                 print(f'Skipped sales order {doc.id}')
                 continue
@@ -75,28 +73,20 @@ def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
             print(f'Downloaded sales order {doc.id}')
 
 
-def start(master: bool, sales_order: bool):
+def start():
     settings = Settings()
     fs = get_firestore_instance()
     for company_code in settings.list_company_codes():
         with Sql(settings.get_sql_credential(company_code)) as sql:
             print(f'Switching to company "{company_code}"')
             sql.login()
-            if sales_order:
-                _get_sales_orders(fs, sql, company_code, settings)
-            if master:
-                _upload_master_data(fs, sql, company_code, settings)
+            _get_sales_orders(fs, sql, company_code, settings)
+            _upload_master_data(fs, sql, company_code, settings)
 
 
 if __name__ == '__main__':
     try:
-        arg = sys.argv[1]
-        if arg == 'all':
-            start(True, True)
-        elif arg == 'sales_order':
-            start(False, True)
-        else:
-            start(True, True)
+        start()
         print('OK...')
     except:
         traceback.print_exc()
