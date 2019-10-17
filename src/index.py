@@ -6,7 +6,6 @@ from settings import Settings
 from sql import Sql
 
 _LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
-_LAST_STOCK_GROUP_TIMESTAMP = 'last_stock_group_timestamp'
 
 
 def _upload_master_data(fs, sql: Sql, company_code: str, settings: Settings):
