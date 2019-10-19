@@ -1,4 +1,4 @@
-from sql.master import Entity
+from sql.entity import Entity
 
 
 class StockItemGroup(Entity):

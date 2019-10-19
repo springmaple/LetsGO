@@ -6,6 +6,7 @@ import util
 from firestore import get_firestore_instance
 from settings import Settings
 from sql import Sql, StockItem, StockItemGroup, Customer, StockItemUom, CustomerBranch, Agent
+from sql.query import aging_report
 
 _LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
 
@@ -66,7 +67,6 @@ def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
     sync_since = settings.get_last_sync_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP)
 
     with tqdm(total=0, desc='Sales Order', unit='Sales Order') as progress:
-        total = 0
         for index, doc in enumerate(
                 fs.collection(collection).where(sync_key, '>', sync_since).order_by(sync_key).stream(), start=1):
             progress.total = index
@@ -83,8 +83,27 @@ def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
                 raise
             else:
                 save_checkpoint()
-                total += 1
                 progress.update(1)
+
+
+def _get_aging_reports(fs, sql: Sql, company_code: str):
+    collection = f'data/{company_code}'
+    doc = fs.document(collection)
+
+    with tqdm(total=0, desc='Aging Report', unit='Document') as progress:
+        rpt_docs = []
+        for index, rpt_doc in enumerate(aging_report.get_aging_report(sql), start=1):
+            progress.total = index
+            progress.set_postfix(refresh=False)
+            progress.update(0)
+            rpt_docs.append(rpt_doc.to_dict())
+            progress.update(1)
+        doc.set({
+            'aging_report': {
+                'updated_on': 0,
+                'documents': rpt_docs
+            }
+        }, merge=True)
 
 
 def start():
@@ -96,6 +115,7 @@ def start():
             sql.login()
             _get_sales_orders(fs, sql, company_code, settings)
             _upload_master_data(fs, sql, company_code)
+            _get_aging_reports(fs, sql, company_code)
 
 
 if __name__ == '__main__':

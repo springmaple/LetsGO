@@ -4,7 +4,7 @@ from decimal import Decimal
 import win32com.client
 
 from sql import util
-from sql.master import Total
+from sql.master import MasterMeta
 from sql.master.agent import Agent
 from sql.master.customer import Customer
 from sql.master.customer_branch import CustomerBranch
@@ -25,10 +25,10 @@ class SqlCredential:
 
 class Sql:
     def __init__(self, sql_crendential: SqlCredential):
-        self._com = win32com.client.Dispatch("SQLAcc.BizApp")
+        self.com = win32com.client.Dispatch("SQLAcc.BizApp")
 
         # Use this for util.print_members
-        # self._com = win32com.client.gencache.EnsureDispatch("SQLAcc.BizApp")
+        # self.com = win32com.client.gencache.EnsureDispatch("SQLAcc.BizApp")
 
         self._credential = (sql_crendential.sql_id,
                             sql_crendential.sql_password,
@@ -39,35 +39,35 @@ class Sql:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        del self._com
+        del self.com
 
     def login(self):
-        if self._com.IsLogin:
-            self._com.Logout()
-        self._com.Login(*self._credential)
+        if self.com.IsLogin:
+            self.com.Logout()
+        self.com.Login(*self._credential)
 
     def count_master_data(self, table_name):
-        data_set = self._com.DBManager.NewDataSet(f'SELECT COUNT(*) AS Total FROM {table_name}')
+        data_set = self.com.DBManager.NewDataSet(f'SELECT COUNT(*) AS Total FROM {table_name}')
         for data in util.loop_data_sets(data_set):
-            return Total(data).total
+            return MasterMeta(data).total
         return 0
 
     def get_master_data(self, table_name, total, converter):
         offset = 1
         while offset <= total:
-            data_set = self._com.DBManager.NewDataSet(
+            data_set = self.com.DBManager.NewDataSet(
                 f'SELECT * FROM {table_name} ROWS {offset} TO {offset + _LOAD_MASTER_PAGE_SIZE}')
             for data in util.loop_data_sets(data_set):
                 yield converter(data)
             offset += _LOAD_MASTER_PAGE_SIZE + 1
 
     def get_master_detail_by_code(self, table_name, code, converter):
-        data_set = self._com.DBManager.NewDataSet(f"SELECT * FROM {table_name} WHERE CODE='{code}'")
+        data_set = self.com.DBManager.NewDataSet(f"SELECT * FROM {table_name} WHERE CODE='{code}'")
         for data in util.loop_data_sets(data_set):
             yield converter(data)
 
     def set_sales_order(self, so: dict):
-        biz_object = self._com.BizObjects.Find("SL_SO")
+        biz_object = self.com.BizObjects.Find("SL_SO")
         main_data = biz_object.DataSets.Find("MainDataSet")
         detail_data = biz_object.DataSets.Find("cdsDocDetail")
 

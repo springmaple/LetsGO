@@ -1,4 +1,5 @@
-from sql.master import Entity, Keywords
+from sql.keywords import Keywords
+from sql.entity import Entity
 
 
 class Customer(Entity):
