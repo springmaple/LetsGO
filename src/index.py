@@ -112,10 +112,9 @@ def start():
     for company_code in settings.list_company_codes():
         with Sql(settings.get_sql_credential(company_code)) as sql:
             print(f'Synchronizing "{company_code}"')
-            sql.login()
             _get_sales_orders(fs, sql, company_code, settings)
             _upload_master_data(fs, sql, company_code)
-            _get_aging_reports(fs, sql, company_code)
+            # _get_aging_reports(fs, sql, company_code)
 
 
 if __name__ == '__main__':

@@ -24,27 +24,33 @@ class SqlCredential:
 
 
 class Sql:
-    def __init__(self, sql_crendential: SqlCredential):
-        self.com = win32com.client.Dispatch("SQLAcc.BizApp")
-
-        # Use this for util.print_members
-        # self.com = win32com.client.gencache.EnsureDispatch("SQLAcc.BizApp")
-
-        self._credential = (sql_crendential.sql_id,
-                            sql_crendential.sql_password,
-                            sql_crendential.sql_dcf,
-                            sql_crendential.sql_fdb)
+    def __init__(self, sql_credential: SqlCredential):
+        self._dispatch()
+        self._credential = (sql_credential.sql_id,
+                            sql_credential.sql_password,
+                            sql_credential.sql_dcf,
+                            sql_credential.sql_fdb)
 
     def __enter__(self):
+        self._login()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        del self.com
+        self._logout()
 
-    def login(self):
+    def _dispatch(self):
+        self.com = win32com.client.Dispatch("SQLAcc.BizApp")
+        # Use this for util.print_members
+        # self.com = win32com.client.gencache.EnsureDispatch("SQLAcc.BizApp")
+
+    def _login(self):
+        if self.com.IsLogin:
+            self._logout()
+        self.com.Login(*self._credential)
+
+    def _logout(self):
         if self.com.IsLogin:
             self.com.Logout()
-        self.com.Login(*self._credential)
 
     def count_master_data(self, table_name):
         data_set = self.com.DBManager.NewDataSet(f'SELECT COUNT(*) AS Total FROM {table_name}')
@@ -80,10 +86,10 @@ class Sql:
         doc_date = datetime.fromtimestamp(so['created_on'], tz=CustomTimeZone())
 
         biz_object.New()
-        main_data.FindField('DocKey').value = -1
+        main_data.FindField('DocKey').Value = -1
         main_data.FindField('DocNo').AsString = so['code']
-        main_data.FindField('DocDate').value = doc_date
-        main_data.FindField('PostDate').value = today
+        main_data.FindField('DocDate').Value = doc_date
+        main_data.FindField('PostDate').Value = today
         main_data.FindField('Agent').AsString = agent['code']
         main_data.FindField('Description').AsString = so['description']
 
@@ -114,19 +120,33 @@ class Sql:
 
         for so_item in so['items']:
             detail_data.Append()
-            detail_data.FindField('DtlKey').value = -1
-            detail_data.FindField('DocKey').value = -1
-            detail_data.FindField('Seq').value = so_item['seq']
+            detail_data.FindField('DtlKey').Value = -1
+            detail_data.FindField('DocKey').Value = -1
+            detail_data.FindField('Seq').Value = so_item['seq']
             detail_data.FindField('ItemCode').AsString = so_item['item']['code']
             detail_data.FindField('Description').AsString = so_item['description']
             detail_data.FindField('Qty').AsFloat = so_item['quantity']
             detail_data.FindField('UOM').AsString = so_item['uom']['uom']
             detail_data.FindField('Tax').AsString = ""
             detail_data.FindField('TaxRate').AsString = ""
-            detail_data.FindField('TaxInclusive').value = 0
+            detail_data.FindField('TaxInclusive').Value = 0
             detail_data.FindField('UnitPrice').AsFloat = so_item['price']
             detail_data.FindField('Amount').AsFloat = str(Decimal(so_item['price']) * Decimal(so_item['quantity']))
             detail_data.FindField('TaxAmt').AsFloat = 0
+            detail_data.FindField('Remark1').AsString = so_item.get('remark', '')
+            detail_data.FindField('Remark2').AsString = so_item.get('remark_2', '')
+            detail_data.Post()
+
+        remark_1 = so.get('remark', '').strip()
+        if remark_1:
+            detail_data.Append()
+            detail_data.FindField('Description').AsString = remark_1
+            detail_data.Post()
+
+        remark_2 = so.get('remark_2', '').strip()
+        if remark_2:
+            detail_data.Append()
+            detail_data.FindField('Description').AsString = remark_2
             detail_data.Post()
 
         biz_object.Save()
