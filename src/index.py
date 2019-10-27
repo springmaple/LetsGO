@@ -1,3 +1,4 @@
+import time
 import traceback
 
 from tqdm import tqdm
@@ -100,7 +101,7 @@ def _get_aging_reports(fs, sql: Sql, company_code: str):
             progress.update(1)
         doc.set({
             'aging_report': {
-                'updated_on': 0,
+                'updated_on': time.time(),
                 'documents': rpt_docs
             }
         }, merge=True)
@@ -114,7 +115,7 @@ def start():
             print(f'Synchronizing "{company_code}"')
             _get_sales_orders(fs, sql, company_code, settings)
             _upload_master_data(fs, sql, company_code)
-            # _get_aging_reports(fs, sql, company_code)
+            _get_aging_reports(fs, sql, company_code)
 
 
 if __name__ == '__main__':
