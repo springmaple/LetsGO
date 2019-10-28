@@ -1,4 +1,6 @@
 ## settings.json
+Add `settings.json` on root.
+
 ```json
 {
   "profiles": [
@@ -12,3 +14,6 @@
   ]
 }
 ```
+
+## service-account.json
+Add `service-account.json` on root.

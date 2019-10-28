@@ -105,4 +105,5 @@ venv.bak/
 
 .idea/
 
-src/settings.json
+settings.json
+service-account.json
