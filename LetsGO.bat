@@ -1,6 +1,6 @@
 @ECHO OFF
 SET CURRENT_DIR=%cd%
-SET SCRIPT_DIR=%~dp0
+SET SCRIPT_DIR=%~dp0\src
 CD /D %SCRIPT_DIR%
 python index.py
 CD /D %CURRENT_DIR%
