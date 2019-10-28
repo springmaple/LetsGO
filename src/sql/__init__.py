@@ -11,6 +11,7 @@ from sql.master.customer_branch import CustomerBranch
 from sql.master.stock_item import StockItem
 from sql.master.stock_item_group import StockItemGroup
 from sql.master.stock_item_uom import StockItemUom
+from sql.master.stock_trans import StockTrans
 
 _LOAD_MASTER_PAGE_SIZE = 50
 
@@ -52,25 +53,51 @@ class Sql:
         if self.com.IsLogin:
             self.com.Logout()
 
-    def count_master_data(self, table_name):
-        data_set = self.com.DBManager.NewDataSet(f'SELECT COUNT(*) AS Total FROM {table_name}')
+    def count_master_data(self, table_name, last_modified=None):
+        query = f'SELECT COUNT(*) AS Total FROM {table_name}'
+        if last_modified is not None:
+            query += f' WHERE LastModified > {last_modified}'
+        data_set = self.com.DBManager.NewDataSet(query)
+        to_return = None
         for data in util.loop_data_sets(data_set):
-            return MasterMeta(data).total
-        return 0
+            to_return = MasterMeta(data).total
+        return to_return or 0
 
-    def get_master_data(self, table_name, total, converter):
+    def get_master_data(self, table_name, total, converter, last_modified=None, order_by_last_modified=True):
         offset = 1
         while offset <= total:
-            data_set = self.com.DBManager.NewDataSet(
-                f'SELECT * FROM {table_name} ROWS {offset} TO {offset + _LOAD_MASTER_PAGE_SIZE}')
+            query = f'SELECT * FROM {table_name}'
+            if last_modified is not None:
+                query += f' WHERE LastModified > {last_modified}'
+            if order_by_last_modified:
+                query += ' ORDER BY LastModified'
+            query += f' ROWS {offset} TO {offset + _LOAD_MASTER_PAGE_SIZE}'
+            data_set = self.com.DBManager.NewDataSet(query)
             for data in util.loop_data_sets(data_set):
                 yield converter(data)
             offset += _LOAD_MASTER_PAGE_SIZE + 1
+
+    def get_master_data_by_code(self, table_name, code, converter):
+        query = f"SELECT * FROM {table_name} WHERE Code = '{code}'"
+        data_set = self.com.DBManager.NewDataSet(query)
+        to_return = None
+        for data in util.loop_data_sets(data_set):
+            to_return = converter(data)
+        return to_return
 
     def get_master_detail_by_code(self, table_name, code, converter):
         data_set = self.com.DBManager.NewDataSet(f"SELECT * FROM {table_name} WHERE CODE='{code}'")
         for data in util.loop_data_sets(data_set):
             yield converter(data)
+
+    def get_st_trans(self, since_trans_no=None):
+        query = f'SELECT * FROM ST_TR'
+        if since_trans_no is not None:
+            query += f' WHERE TransNo > {since_trans_no}'
+        query += ' ORDER BY TRANSNO'
+        data_set = self.com.DBManager.NewDataSet(query)
+        for data in util.loop_data_sets(data_set):
+            yield StockTrans(data)
 
     def set_sales_order(self, so: dict):
         biz_object = self.com.BizObjects.Find("SL_SO")

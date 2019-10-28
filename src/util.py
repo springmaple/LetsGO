@@ -21,3 +21,7 @@ def find_file(file: str):
 
 def esc_key(key: str):
     return key.replace('/', '_')
+
+
+def is_last_modified_not_empty(last_modified):
+    return last_modified is not None and last_modified > 0

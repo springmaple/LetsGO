@@ -25,7 +25,7 @@ class Settings:
                     profile['sql_fdb']
                 )
 
-    def get_last_sync_prop(self, company_code: str, prop_name: str) -> int:
+    def get_prop(self, company_code: str, prop_name: str) -> int:
         for profile in self._settings['profiles']:
             if profile['company_code'] == company_code:
                 if prop_name in profile:
@@ -33,13 +33,14 @@ class Settings:
                 break
         return 0
 
-    def set_last_sync_prop(self, company_code: str, prop_name: str, timestamp: int):
+    def set_prop(self, company_code: str, prop_name: str, timestamp: int):
         for profile in self._settings['profiles']:
             if profile['company_code'] == company_code:
                 profile[prop_name] = timestamp
+                self._save()
                 return
 
-    def save(self):
+    def _save(self):
         data = json.dumps(self._settings, indent=2)
         with open(self._settings_file, mode='w') as f:
             print(data, file=f)

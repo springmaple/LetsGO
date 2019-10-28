@@ -10,29 +10,65 @@ from sql import Sql, StockItem, StockItemGroup, Customer, StockItemUom, Customer
 from sql.query import aging_report
 
 _LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
+_ST_ITEM_LAST_MODIFIED = 'last_modified_st_item'
+_ST_GROUP_LAST_MODIFIED = 'last_modified_st_group'
+_ST_TRANS_LAST_TRANS_NO = 'last_trans_no_st_trans'
 
 
-def _upload_master_data(fs, sql: Sql, company_code: str):
+def _upload_master_data(fs, sql: Sql, company_code: str, settings: Settings):
     # Stock items
+    last_modified = settings.get_prop(company_code, _ST_ITEM_LAST_MODIFIED) or None
     table_name = 'ST_ITEM'
     uom_table_name = 'ST_ITEM_UOM'
-    total = sql.count_master_data(table_name)
+    total = sql.count_master_data(table_name, last_modified)
+    item_code_updated = set()
     with tqdm(total=total, desc='Stock Items', unit='Item') as progress:
-        for stock in sql.get_master_data(table_name, total, lambda data: StockItem(data)):
+        for stock in sql.get_master_data(table_name, total, lambda data: StockItem(data), last_modified):
             stock_code = stock.code
             stock.uom = list(sql.get_master_detail_by_code(
                 uom_table_name, stock_code, lambda data: StockItemUom(data)))
             doc_ref = fs.document(f'data/{company_code}/items/{util.esc_key(stock_code)}')
             doc_ref.set(stock.to_dict())
+
+            if util.is_last_modified_not_empty(stock.last_modified):
+                settings.set_prop(company_code, _ST_ITEM_LAST_MODIFIED, stock.last_modified)
+            item_code_updated.add(stock.code)
+
             progress.update(1)
 
+        last_trans_no = settings.get_prop(company_code, _ST_TRANS_LAST_TRANS_NO) or None
+        stock_trans_to_update = []
+        for stock_trans in sql.get_st_trans(last_trans_no):
+            should_update = stock_trans.item_code not in item_code_updated
+            stock_trans_to_update.append((stock_trans, should_update))
+            item_code_updated.add(stock_trans.item_code)
+
+        progress.total = total + len(list(filter(lambda i: i[1], stock_trans_to_update)))
+        progress.set_postfix(refresh=False)
+        progress.update(0)
+
+        for stock_trans, should_update in stock_trans_to_update:
+            if should_update:
+                stock = sql.get_master_data_by_code(table_name, stock_trans.item_code,
+                                                    lambda data: StockItem(data))
+                stock_code = stock.code
+                stock.uom = list(sql.get_master_detail_by_code(
+                    uom_table_name, stock_code, lambda data: StockItemUom(data)))
+                doc_ref = fs.document(f'data/{company_code}/items/{util.esc_key(stock_code)}')
+                doc_ref.set(stock.to_dict())
+                progress.update(1)
+            settings.set_prop(company_code, _ST_TRANS_LAST_TRANS_NO, stock_trans.trans_no)
+
     # Item groups
+    last_modified = settings.get_prop(company_code, _ST_GROUP_LAST_MODIFIED) or None
     table_name = 'ST_GROUP'
-    total = sql.count_master_data(table_name)
+    total = sql.count_master_data(table_name, last_modified)
     with tqdm(total=total, desc='Stock Groups', unit='Group') as progress:
-        for group in sql.get_master_data(table_name, total, lambda data: StockItemGroup(data)):
+        for group in sql.get_master_data(table_name, total, lambda data: StockItemGroup(data), last_modified):
             doc_ref = fs.document(f'data/{company_code}/itemGroups/{util.esc_key(group.code)}')
             doc_ref.set(group.to_dict())
+            if util.is_last_modified_not_empty(group.last_modified):
+                settings.set_prop(company_code, _ST_GROUP_LAST_MODIFIED, group.last_modified)
             progress.update(1)
 
     # Customer
@@ -52,20 +88,19 @@ def _upload_master_data(fs, sql: Sql, company_code: str):
     table_name = 'AGENT'
     total = sql.count_master_data(table_name)
     with tqdm(total=total, desc='Agents', unit='Agent') as progress:
-        for agent in sql.get_master_data(table_name, total, lambda data: Agent(data)):
+        for agent in sql.get_master_data(table_name, total, lambda data: Agent(data), order_by_last_modified=False):
             doc_ref = fs.document(f'data/{company_code}/agents/{util.esc_key(agent.code)}')
             doc_ref.set(agent.to_dict())
             progress.update(1)
 
 
 def _get_sales_orders(fs, sql: Sql, company_code: str, settings: Settings):
-    def save_checkpoint():
-        settings.set_last_sync_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP, sales_order[sync_key])
-        settings.save()
-
     collection = f'data/{company_code}/salesOrders'
     sync_key = 'created_on'
-    sync_since = settings.get_last_sync_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP)
+    sync_since = settings.get_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP)
+
+    def save_checkpoint():
+        settings.set_prop(company_code, _LAST_SALES_ORDER_TIMESTAMP, sales_order[sync_key])
 
     with tqdm(total=0, desc='Sales Order', unit='Sales Order') as progress:
         for index, doc in enumerate(
@@ -114,7 +149,7 @@ def start():
         with Sql(settings.get_sql_credential(company_code)) as sql:
             print(f'Synchronizing "{company_code}"')
             _get_sales_orders(fs, sql, company_code, settings)
-            _upload_master_data(fs, sql, company_code)
+            _upload_master_data(fs, sql, company_code, settings)
             _get_aging_reports(fs, sql, company_code)
 
 
