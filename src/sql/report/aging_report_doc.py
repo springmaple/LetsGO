@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from sql.entity import Entity
 
 
@@ -19,4 +21,7 @@ class AgingReportDoc(Entity):
         self.terms = self._get_str('Terms')
         self.currency_code = self._get_str('CurrencyCode')
         self.currency_rate = self._get_decimal('CurrencyRate')
-        self.amount = self._get_currency('C6')
+        for i in range(1, 7):
+            self.amount = self._get_currency(f'C{i}')
+            if self.amount != Decimal(0):
+                break
