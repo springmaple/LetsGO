@@ -12,6 +12,9 @@ class Settings:
         with open(self._settings_file, mode='r') as f:
             self._settings = json.load(f)
 
+    def list_profiles(self) -> list:
+        return [profile for profile in self._settings['profiles']]
+
     def list_company_codes(self) -> list:
         return [profile['company_code'] for profile in self._settings['profiles']]
 

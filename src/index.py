@@ -1,13 +1,15 @@
 import time
 import traceback
+from tkinter import Tk
 
 from tqdm import tqdm
 
 import util
-from firestore import get_firestore_instance
+from firestore import get_firestore_instance, get_firebase_storage
 from settings import Settings
 from sql import Sql, StockItem, StockItemGroup, Customer, StockItemUom, CustomerBranch, Agent
 from sql.query import aging_report
+from ui import AppMain, ViewModel
 
 _LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
 _ST_ITEM_LAST_MODIFIED = 'last_modified_st_item'
@@ -153,9 +155,21 @@ def start():
             _get_aging_reports(fs, sql, company_code)
 
 
+def start_gui():
+    settings = Settings()
+    fs = get_firestore_instance()
+    st = get_firebase_storage()
+
+    vm = ViewModel(fs, st, settings)
+    root = Tk()
+    AppMain(root, vm)
+    root.resizable(False, False)
+    root.mainloop()
+
+
 if __name__ == '__main__':
     try:
-        start()
+        start_gui()
         print('OK...')
     except:
         traceback.print_exc()

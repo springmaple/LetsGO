@@ -1,50 +1,257 @@
-from tkinter import Tk, Listbox, END, LEFT, TOP, Label, PhotoImage, StringVar, Button
+from concurrent.futures.thread import ThreadPoolExecutor
+from threading import Thread
+from tkinter import Tk, Listbox, END, LEFT, Label, PhotoImage, StringVar, Button, Frame, TOP, OptionMenu, Scrollbar, \
+    BOTTOM, Entry, RIGHT
 from tkinter.filedialog import askopenfilename
+from tkinter.messagebox import showwarning
+from typing import Any
 
-from ui.view_model import ViewModel
+import util
+from constants import APP_NAME
+from ui.view_model import ViewModel, Item, Profile
+
+_photo_executor = ThreadPoolExecutor(max_workers=1)
 
 
 class AppMain:
     def __init__(self, master: Tk, vm: ViewModel):
-        self.master = master
-        master.title("Let'sGO")
+        def _on_close():
+            _photo_executor.shutdown()
+            master.destroy()
 
-        vm.load_items()
+        master.protocol("WM_DELETE_WINDOW", _on_close)
+        master.title(APP_NAME)
 
-        listbox = Listbox(master)
-        for item in vm.items:
-            listbox.insert(END, item.code)
-        listbox.pack(side=LEFT, fill='y')
+        main_frame = Frame()
 
-        def on_select(evt):
-            w = evt.widget
-            index = int(w.curselection()[0])
-            item_code = w.get(index)
-            label_str.set(item_code)
-            label.update()
+        def _on_profile_changed(profile: Profile):
+            if vm.current_profile.company_code == profile.company_code:
+                return
+            vm.set_current_profile(profile)
+            upload_photo_frame.refresh()
 
-            img = vm.get_image(item_code)
-            img2 = PhotoImage(file=img) if img else photo
-            image.configure(image=img2)
-            image.image = img2
+        main_top_frame = Frame(main_frame)
 
-        listbox.bind('<<ListboxSelect>>', on_select)
+        company_frame = ProfileFrame(main_top_frame, vm, _on_profile_changed)
+        company_frame.pack(side=LEFT, fill='x', pady=(0, 10))
 
-        label_str = StringVar()
-        label = Label(master, textvariable=label_str)
-        label.pack(side=TOP, fill='x')
+        sync_frame = SyncFrame(main_top_frame, None)
+        sync_frame.pack(side=RIGHT)
 
-        photo_data = """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"""
-        photo = PhotoImage(data=photo_data)
-        image = Label(master, image=photo)
-        image.image = photo
-        image.pack(side=TOP)
+        main_top_frame.pack(side=TOP, fill='x', pady=(0, 10))
 
-        def on_set_new_photo():
+        upload_photo_frame = UploadPhotoFrame(main_frame, vm)
+        upload_photo_frame.pack(side=TOP, fill='x')
+
+        main_frame.pack(padx=20, pady=10)
+
+        upload_photo_frame.refresh()
+
+
+class ProfileFrame(Frame):
+    def __init__(self, parent, vm: ViewModel, on_profile_changed, **kw):
+        super().__init__(parent, **kw)
+
+        label = Label(self, text='Company')
+        label.pack(side=LEFT)
+
+        companies = []
+        value = ''
+        for profile in vm.profiles:
+            if not value:
+                value = profile.company_name
+            else:
+                companies.append(profile.company_name)
+
+        s = StringVar()
+        s.set(value)
+
+        def _on_changed(*_):
+            company_name = s.get()
+            for _profile in vm.profiles:
+                if _profile.company_name == company_name:
+                    on_profile_changed(_profile)
+                    break
+
+        s.trace('w', _on_changed)
+        option = OptionMenu(self, s, value, *companies)
+        option.pack(side=LEFT, fill='x')
+
+
+class SyncFrame(Frame):
+    def __init__(self, parent, on_click, **kw):
+        super().__init__(parent, **kw)
+        text = Label(self, text='Sync Now', fg='blue', cursor='hand2')
+        text.bind("<Button-1>", lambda e: on_click())
+        text.pack()
+
+
+class UploadPhotoFrame(Frame):
+    def __init__(self, parent, vm: ViewModel, **kw):
+        super().__init__(parent, **kw)
+        self._vm = vm
+
+        item_list_frame = Frame(self)
+        parent_photo_frame = Frame(self)
+        photo_label_frame = Frame(parent_photo_frame)
+
+        selected_item = None  # type: Any[Item]
+        item_title, item_desc, set_item_title = self._setup_item_label(photo_label_frame)
+        photo, set_photo = self._setup_photo(parent_photo_frame)
+
+        def wrap(fn):
+            def wrapper(*args, **kwargs):
+                def run():
+                    set_photo_button_active(False)
+                    fn(*args, **kwargs)
+                    set_photo_button_active(True)
+
+                Thread(target=run).start()
+
+            return wrapper
+
+        @wrap
+        def on_set_photo():
+            if not selected_item:
+                return
+
             filename = askopenfilename()
             if not filename:
                 return
-            vm.save_image(label_str.get(), filename)
 
-        button = Button(master, text='Set New Photo', command=on_set_new_photo)
-        button.pack(side=TOP)
+            set_listbox_active(False)
+            try:
+                self._vm.save_image(selected_item.code, filename)
+                set_photo(vm.get_image(selected_item.code))
+            except:
+                showwarning(APP_NAME, 'Unsupported image format')
+            finally:
+                set_listbox_active(True)
+
+        @wrap
+        def on_item_selected(item):
+            nonlocal selected_item
+            selected_item = item
+
+            def _on_item_selected(_item):
+                if not _item:
+                    set_item_title('', '')
+                    set_photo(None)
+                else:
+                    set_item_title(_item.code, _item.desc)
+                    set_photo(vm.get_image(_item.code))
+
+            waiter = _photo_executor.submit(_on_item_selected, item)
+            waiter.result()
+
+        photo_button, set_photo_button_active = self._setup_set_photo_button(photo_label_frame, on_set_photo)
+        item_list, refresh_item_list, set_listbox_active = self._setup_item_listbox(
+            item_list_frame, on_item_selected)
+        search_box, get_search_box_text = self._setup_item_search(
+            item_list_frame, lambda s: refresh_item_list(s))
+
+        set_photo_button_active(False)
+
+        item_list.pack(side=BOTTOM, fill='y', expand=1)
+        search_box.pack(side=BOTTOM, pady=(0, 10), fill='x')
+        item_list_frame.pack(side=LEFT, fill='y', expand=1)
+
+        photo_button.pack(side=LEFT, padx=(0, 10), pady=(0, 10))
+        item_title.pack(side=LEFT, padx=(0, 10))
+        item_desc.pack(side=LEFT, fill='x')
+        photo_label_frame.pack(side=TOP, fill='x')
+
+        photo.pack(side=TOP)
+        parent_photo_frame.pack(side=LEFT, padx=(10, 0))
+
+        def _refresh():
+            search_box_text = get_search_box_text()
+            refresh_item_list(search_box_text)
+
+        self.refresh = _refresh
+
+    def _setup_item_search(self, parent, on_change):
+        s = StringVar()
+        search = Entry(parent, textvariable=s)
+        s.trace_variable('w', lambda *_: on_change(s.get()))
+        return search, lambda: s.get()
+
+    def _setup_item_listbox(self, parent, on_select):
+        listbox_frame = Frame(parent)
+        listbox = Listbox(listbox_frame, width=50)
+
+        def _on_select(evt):
+            w = evt.widget
+            selections = w.curselection()
+            if len(selections) > 0:
+                index = int(selections[0])
+                on_select(filtered_items[index])
+            else:
+                on_select(None)
+
+        filtered_items = []
+
+        def _refresh(_filter_text):
+            nonlocal filtered_items
+            filter_text = (_filter_text or '').lower()
+            filtered_items = [item for item in self._vm.items
+                              if (not filter_text) or filter_text in item.keywords]
+
+            listbox.delete(0, END)
+            for item in filtered_items:
+                listbox.insert(END, f'[{item.code}] {item.desc}')
+            if len(filtered_items) > 0:
+                listbox.activate(0)
+                listbox.select_set(0)
+                on_select(filtered_items[0])
+            else:
+                on_select(None)
+
+        def _set_active(is_active):
+            listbox['state'] = 'normal' if is_active else 'disabled'
+
+        scrollbar = Scrollbar(listbox_frame, orient="vertical")
+
+        listbox.bind('<<ListboxSelect>>', _on_select)
+        listbox.pack(side=LEFT, fill='y')
+        scrollbar.config(command=listbox.yview)
+        listbox.config(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=LEFT, fill='y')
+        return listbox_frame, _refresh, _set_active
+
+    def _setup_item_label(self, parent):
+        title_str = StringVar()
+        title = Label(parent, textvariable=title_str)
+        desc_str = StringVar()
+        desc = Label(parent, textvariable=desc_str)
+
+        def _update(new_title, new_desc):
+            title_str.set(new_title)
+            desc_str.set(new_desc)
+            title.update()
+            desc.update()
+
+        return title, desc, _update
+
+    def _setup_set_photo_button(self, parent, on_click):
+        button = Button(parent, text='Set Photo', command=on_click)
+
+        def _set_button_active(is_active):
+            button['state'] = 'normal' if is_active else 'disabled'
+
+        return button, _set_button_active
+
+    def _setup_photo(self, parent):
+        default_img = util.find_file('res/img/default_img.png')
+        photo = PhotoImage(file=default_img)
+        image = Label(parent, image=photo, width=480, height=480, borderwidth=2, relief='groove')
+        image.image = photo
+
+        def _set_photo(filename: str):
+            nonlocal photo, image
+            _photo = PhotoImage(file=filename) if filename else photo
+            image.configure(image=_photo)
+            image.image = _photo
+
+        _set_photo('')
+        return image, _set_photo

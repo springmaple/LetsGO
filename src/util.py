@@ -25,3 +25,13 @@ def esc_key(key: str):
 
 def is_last_modified_not_empty(last_modified):
     return last_modified is not None and last_modified > 0
+
+
+def resize_image(width, height, max_size=800):
+    x, y, is_swap = (width, height, False) if width > height else (height, width, True)
+    if x > max_size:
+        ratio = max_size // width
+        x = max_size
+        y = int(y * ratio)
+        width, height = (x, y) if not is_swap else (y, x)
+    return width, height
