@@ -14,7 +14,7 @@ _photo_executor = ThreadPoolExecutor(max_workers=1)
 
 
 class AppMain:
-    def __init__(self, master: Tk, vm: ViewModel):
+    def __init__(self, master: Tk, vm: ViewModel, on_sync):
         def _on_close():
             _photo_executor.shutdown()
             master.destroy()
@@ -35,17 +35,20 @@ class AppMain:
         company_frame = ProfileFrame(main_top_frame, vm, _on_profile_changed)
         company_frame.pack(side=LEFT, fill='x', pady=(0, 10))
 
-        sync_frame = SyncFrame(main_top_frame, None)
+        sync_frame = SyncFrame(main_top_frame, lambda: on_sync(vm.current_profile))
         sync_frame.pack(side=RIGHT)
 
         main_top_frame.pack(side=TOP, fill='x', pady=(0, 10))
 
-        upload_photo_frame = UploadPhotoFrame(main_frame, vm)
+        self._upload_photo_frame = upload_photo_frame = UploadPhotoFrame(main_frame, vm)
         upload_photo_frame.pack(side=TOP, fill='x')
 
         main_frame.pack(padx=20, pady=10)
 
         upload_photo_frame.refresh()
+
+    def refresh(self):
+        self._upload_photo_frame.refresh()
 
 
 class ProfileFrame(Frame):

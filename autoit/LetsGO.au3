@@ -1,0 +1,1 @@
+Run(@ScriptDir & "\LetsGO.bat", "", @SW_HIDE)

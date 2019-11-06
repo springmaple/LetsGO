@@ -6,14 +6,14 @@ Add `settings.json` on root.
   "profiles": [
     {
       "company_code": "test",
-      "sql_id": "ADMIN",
-      "sql_password": "ADMIN",
-      "sql_dcf": "C:\\eStream\\SQLAccounting\\Share\\Default.DCF",
-      "sql_fdb": "ACC-0001.FDB"
+      "company_name": "Company Testing"
     }
   ]
 }
 ```
+
+## LetsGO.exe
+x86 build only
 
 ## service-account.json
 Add `service-account.json` on root.

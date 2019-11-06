@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta, tzinfo
 from decimal import Decimal
 
+import pythoncom
 import win32com.client
 
 from sql import util
 from sql.master import MasterMeta
 from sql.master.agent import Agent
+from sql.master.company_profile import CompanyProfile
 from sql.master.customer import Customer
 from sql.master.customer_branch import CustomerBranch
 from sql.master.stock_item import StockItem
@@ -16,42 +18,33 @@ from sql.master.stock_trans import StockTrans
 _LOAD_MASTER_PAGE_SIZE = 50
 
 
-class SqlCredential:
-    def __init__(self, sql_id, sql_password, sql_dcf, sql_fdb):
-        self.sql_id = sql_id
-        self.sql_password = sql_password
-        self.sql_dcf = sql_dcf
-        self.sql_fdb = sql_fdb
-
-
 class Sql:
-    def __init__(self, sql_credential: SqlCredential):
+    def __init__(self):
         self._dispatch()
-        self._credential = (sql_credential.sql_id,
-                            sql_credential.sql_password,
-                            sql_credential.sql_dcf,
-                            sql_credential.sql_fdb)
 
     def __enter__(self):
-        self._login()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._logout()
+        pass
 
     def _dispatch(self):
+        pythoncom.CoInitialize()
         self.com = win32com.client.Dispatch("SQLAcc.BizApp")
         # Use this for util.print_members
         # self.com = win32com.client.gencache.EnsureDispatch("SQLAcc.BizApp")
 
-    def _login(self):
+    def verify_login(self, company_name: str):
         if self.com.IsLogin:
-            self._logout()
-        self.com.Login(*self._credential)
-
-    def _logout(self):
-        if self.com.IsLogin:
-            self.com.Logout()
+            rpt_obj = self.com.RptObjects.Find('Common.Agent.RO')
+            rpt_obj.CalculateReport()
+            data_set = rpt_obj.DataSets.Find("cdsProfile")
+            company_profile = None
+            for data in util.loop_data_sets(data_set):
+                company_profile = CompanyProfile(data)
+            if company_profile and company_profile.company_name == company_name:
+                return
+        raise Exception(f'Please login to {company_name}')
 
     def count_master_data(self, table_name, last_modified=None):
         query = f'SELECT COUNT(*) AS Total FROM {table_name}'

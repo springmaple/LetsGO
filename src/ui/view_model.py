@@ -5,6 +5,7 @@ import subprocess
 from PIL import Image
 
 import util
+from constants import TMP_DIR
 from settings import Settings
 
 
@@ -19,9 +20,6 @@ class Item:
         self.code = data['code']
         self.desc = data['description']
         self.keywords = data['keywords']
-
-
-_tmp_dir = 'C:\\Users\\wilson.ong\\Desktop\\'
 
 
 class ViewModel:
@@ -48,7 +46,7 @@ class ViewModel:
         blob = self._st.get_blob(f'{self._company_code()}/{key}.webp')
         if not blob:
             return None
-        image_path = os.path.join(_tmp_dir, 'dl.webp')
+        image_path = os.path.join(TMP_DIR, 'dl.webp')
         blob.download_to_filename(image_path)
         return _to_png(image_path)
 
@@ -56,22 +54,35 @@ class ViewModel:
         return self.current_profile.company_code
 
     def _get_items(self):
-        cache = os.path.join(_tmp_dir, self._company_code(), 'items.json')
+        cache = get_cache_items_path(self._company_code())
         if os.path.exists(cache):
             with open(cache, mode='r') as f:
                 items = json.load(f)
                 return [Item(item) for item in items]
 
-        os.makedirs(os.path.dirname(cache))
-        data = [doc.to_dict() for doc in self._fs.collection(f'data/{self._company_code()}/items').stream()]
-        with open(cache, mode='w') as f:
-            json.dump(data, f)
-        return [Item(d) for d in data]
+        list(download_cache_items(self._company_code(), self._fs))
+        return self._get_items()
+
+
+def get_cache_items_path(company_code):
+    return os.path.join(TMP_DIR, company_code, 'items.json')
+
+
+def download_cache_items(company_code, fs):
+    cache = get_cache_items_path(company_code)
+    os.makedirs(os.path.dirname(cache), exist_ok=True)
+    data = []
+    for doc in fs.collection(f'data/{company_code}/items').stream():
+        item_dict = doc.to_dict()
+        data.append(item_dict)
+        yield item_dict
+    with open(cache, mode='w') as f:
+        json.dump(data, f)
 
 
 def _to_png(filename: str):
     dwebp = os.path.join(_get_webp_dir(), 'dwebp.exe')
-    out = os.path.join(_tmp_dir, 'out.png')
+    out = os.path.join(TMP_DIR, 'out.png')
     subprocess.call([dwebp, filename, '-o', out, '-scale', '480', '480'], cwd=_get_webp_dir())
     return out
 
@@ -80,7 +91,7 @@ def _to_webp(filename: str):
     image = Image.open(filename)
     width, height = image.size
     prog = os.path.join(_get_webp_dir(), 'cwebp.exe')
-    out = os.path.join(_tmp_dir, 'out.webp')
+    out = os.path.join(TMP_DIR, 'out.webp')
     shorter_side = width if width < height else height
     final_size = 480 if shorter_side > 480 else shorter_side
     subprocess.call([prog, filename,
