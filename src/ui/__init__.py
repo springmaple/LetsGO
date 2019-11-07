@@ -1,5 +1,4 @@
 from concurrent.futures.thread import ThreadPoolExecutor
-from threading import Thread
 from tkinter import Tk, Listbox, END, LEFT, Label, PhotoImage, StringVar, Button, Frame, TOP, OptionMenu, Scrollbar, \
     BOTTOM, Entry, RIGHT
 from tkinter.filedialog import askopenfilename
@@ -102,14 +101,20 @@ class UploadPhotoFrame(Frame):
         item_title, item_desc, set_item_title = self._setup_item_label(photo_label_frame)
         photo, set_photo = self._setup_photo(parent_photo_frame)
 
+        wrap_task = None
+
         def wrap(fn):
             def wrapper(*args, **kwargs):
+                nonlocal wrap_task
+
                 def run():
                     set_photo_button_active(False)
                     fn(*args, **kwargs)
                     set_photo_button_active(True)
 
-                Thread(target=run).start()
+                if wrap_task:
+                    wrap_task.cancel()
+                wrap_task = _photo_executor.submit(run)
 
             return wrapper
 
@@ -136,16 +141,12 @@ class UploadPhotoFrame(Frame):
             nonlocal selected_item
             selected_item = item
 
-            def _on_item_selected(_item):
-                if not _item:
-                    set_item_title('', '')
-                    set_photo(None)
-                else:
-                    set_item_title(_item.code, _item.desc)
-                    set_photo(vm.get_image(_item.code))
-
-            waiter = _photo_executor.submit(_on_item_selected, item)
-            waiter.result()
+            if not item:
+                set_item_title('', '')
+                set_photo(None)
+            else:
+                set_item_title(item.code, item.desc)
+                set_photo(vm.get_image(item.code))
 
         photo_button, set_photo_button_active = self._setup_set_photo_button(photo_label_frame, on_set_photo)
         item_list, refresh_item_list, set_listbox_active = self._setup_item_listbox(
