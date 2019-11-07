@@ -12,6 +12,7 @@ from ui.view_model import download_cache_items
 _LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
 _ST_ITEM_LAST_MODIFIED = 'last_modified_st_item'
 _ST_GROUP_LAST_MODIFIED = 'last_modified_st_group'
+_ST_CUSTOMER_LAST_MODIFIED = 'last_modified_st_customer'
 _ST_TRANS_LAST_TRANS_NO = 'last_trans_no_st_trans'
 
 
@@ -81,15 +82,18 @@ class SyncService:
 
     def upload_customers(self):
         # Customer
+        last_modified = self._settings.get_prop(self._company_code, _ST_CUSTOMER_LAST_MODIFIED) or None
         table_name = 'AR_CUSTOMER'
         branch_table_name = 'AR_CUSTOMERBRANCH'
-        total = self._sql.count_master_data(table_name)
-        for customer in self._sql.get_master_data(table_name, total, lambda data: Customer(data)):
+        total = self._sql.count_master_data(table_name, last_modified)
+        for customer in self._sql.get_master_data(table_name, total, lambda data: Customer(data), last_modified):
             customer_code = customer.code
             customer.branch = list(self._sql.get_master_detail_by_code(
                 branch_table_name, customer_code, lambda data: CustomerBranch(data)))
             doc_ref = self._fs.document(f'data/{self._company_code}/customers/{util.esc_key(customer_code)}')
             doc_ref.set(customer.to_dict())
+            if util.is_last_modified_not_empty(customer.last_modified):
+                self._settings.set_prop(self._company_code, _ST_CUSTOMER_LAST_MODIFIED, customer.last_modified)
             yield customer
 
     def upload_agents(self):
