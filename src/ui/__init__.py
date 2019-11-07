@@ -149,6 +149,7 @@ class UploadPhotoFrame(Frame):
         @wrap_set_photo
         def on_set_photo():
             if not selected_item:
+                showwarning(APP_NAME, 'Please select a stock item first.')
                 return
 
             filename = askopenfilename()
