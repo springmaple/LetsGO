@@ -2,7 +2,7 @@ import os
 import traceback
 from threading import Thread
 from tkinter import Tk
-from tkinter.messagebox import showerror
+from tkinter.messagebox import showwarning, showerror
 
 import util
 from constants import APP_NAME
@@ -10,6 +10,7 @@ from firestore import get_firestore_instance, get_firebase_storage
 from settings import Settings
 from sql import Sql
 from ui import AppMain, ViewModel, Profile
+from ui.AppException import AppException
 from ui.sync import SyncProgress, SyncService
 from ui.sync.service import is_sql_running
 
@@ -33,7 +34,7 @@ def start_gui():
     def _on_sync(profile: Profile):
         try:
             if not is_sql_running():
-                raise Exception('Please start SQL Account and login first.')
+                raise AppException('Please start SQL Account and login first.')
 
             top = SyncProgress(root)
             top.title('Sync')
@@ -47,6 +48,9 @@ def start_gui():
                         ss.check_login()
                         top.start_sync(ss)
                         app_main.refresh()
+                    except AppException as _app_ex:
+                        top.destroy()
+                        showwarning(APP_NAME, _app_ex)
                     except Exception as _ex:
                         top.destroy()
                         showerror(APP_NAME, _ex)
@@ -55,6 +59,8 @@ def start_gui():
 
             _center_window(top, 400, 300)
             root.wait_window(top)
+        except AppException as app_ex:
+            showwarning(APP_NAME, app_ex)
         except Exception as ex:
             showerror(APP_NAME, ex)
 

@@ -14,6 +14,7 @@ from sql.master.stock_item import StockItem
 from sql.master.stock_item_group import StockItemGroup
 from sql.master.stock_item_uom import StockItemUom
 from sql.master.stock_trans import StockTrans
+from ui.AppException import AppException
 
 _LOAD_MASTER_PAGE_SIZE = 50
 
@@ -44,7 +45,7 @@ class Sql:
                 company_profile = CompanyProfile(data)
             if company_profile and company_profile.company_name == company_name:
                 return
-        raise Exception(f'Please login to {company_name}')
+        raise AppException(f'Please login to {company_name}')
 
     def count_master_data(self, table_name, last_modified=None):
         query = f'SELECT COUNT(*) AS Total FROM {table_name}'
