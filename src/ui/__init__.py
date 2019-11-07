@@ -6,7 +6,7 @@ from tkinter.messagebox import showwarning
 from typing import Any
 
 import util
-from constants import APP_NAME
+from constants import APP_NAME, APP_VERSION
 from ui.tk_dnd import TkDND, parse_files_from_text
 from ui.view_model import ViewModel, Item, Profile
 
@@ -20,7 +20,7 @@ class AppMain:
             master.destroy()
 
         master.protocol("WM_DELETE_WINDOW", _on_close)
-        master.title(APP_NAME)
+        master.title(f'{APP_NAME} - {APP_VERSION}')
 
         main_frame = Frame()
 
