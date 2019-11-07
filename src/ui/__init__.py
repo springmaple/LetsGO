@@ -7,6 +7,7 @@ from typing import Any
 
 import util
 from constants import APP_NAME
+from ui.tk_dnd import TkDND, parse_files_from_text
 from ui.view_model import ViewModel, Item, Profile
 
 _photo_executor = ThreadPoolExecutor(max_workers=1)
@@ -97,20 +98,20 @@ class UploadPhotoFrame(Frame):
         parent_photo_frame = Frame(self)
         photo_label_frame = Frame(parent_photo_frame)
 
-        selected_item = None  # type: Any[Item]
-        item_title, item_desc, set_item_title = self._setup_item_label(photo_label_frame)
-        photo, set_photo = self._setup_photo(parent_photo_frame)
-
         wrap_task = None
 
-        def wrap(fn):
+        def wrap_load_photo(fn):
             def wrapper(*args, **kwargs):
                 nonlocal wrap_task
 
                 def run():
+                    nonlocal wrap_task
                     set_photo_button_active(False)
-                    fn(*args, **kwargs)
-                    set_photo_button_active(True)
+                    try:
+                        fn(*args, **kwargs)
+                    finally:
+                        set_photo_button_active(True)
+                        wrap_task = None
 
                 if wrap_task:
                     wrap_task.cancel()
@@ -118,7 +119,34 @@ class UploadPhotoFrame(Frame):
 
             return wrapper
 
-        @wrap
+        def wrap_set_photo(fn):
+            if wrap_task:
+                showwarning(APP_NAME, f'Please wait while {APP_NAME} is performing other task')
+                return
+            return wrap_load_photo(fn)
+
+        def _set_photo(_item, _filename):
+            set_listbox_active(False)
+            try:
+                self._vm.save_image(selected_item.code, _filename)
+                set_photo(vm.get_image(selected_item.code))
+            except:
+                showwarning(APP_NAME, 'Unsupported image format')
+            finally:
+                set_listbox_active(True)
+
+        @wrap_set_photo
+        def on_drop_photo(filename):
+            if not selected_item:
+                showwarning(APP_NAME, 'Please select a stock item first')
+                return
+            _set_photo(selected_item, filename)
+
+        selected_item = None  # type: Any[Item]
+        item_title, item_desc, set_item_title = self._setup_item_label(photo_label_frame)
+        photo, set_photo = self._setup_photo(parent_photo_frame, on_drop_photo)
+
+        @wrap_set_photo
         def on_set_photo():
             if not selected_item:
                 return
@@ -126,17 +154,9 @@ class UploadPhotoFrame(Frame):
             filename = askopenfilename()
             if not filename:
                 return
+            _set_photo(selected_item, filename)
 
-            set_listbox_active(False)
-            try:
-                self._vm.save_image(selected_item.code, filename)
-                set_photo(vm.get_image(selected_item.code))
-            except:
-                showwarning(APP_NAME, 'Unsupported image format')
-            finally:
-                set_listbox_active(True)
-
-        @wrap
+        @wrap_load_photo
         def on_item_selected(item):
             nonlocal selected_item
             selected_item = item
@@ -245,7 +265,7 @@ class UploadPhotoFrame(Frame):
 
         return button, _set_button_active
 
-    def _setup_photo(self, parent):
+    def _setup_photo(self, parent, on_drop_photo):
         default_img = util.find_file('res/img/default_img.png')
         photo = PhotoImage(file=default_img)
         image = Label(parent, image=photo, width=480, height=480, borderwidth=2, relief='groove')
@@ -256,6 +276,18 @@ class UploadPhotoFrame(Frame):
             _photo = PhotoImage(file=filename) if filename else photo
             image.configure(image=_photo)
             image.image = _photo
+
+        def _on_drop_photo(_event):
+            files = parse_files_from_text(str(_event.data))
+            if len(files) == 0:
+                return
+            if len(files) > 1:
+                showwarning(APP_NAME, 'You dropped too many files')
+                return
+            on_drop_photo(files[0])
+
+        dnd = TkDND(parent)
+        dnd.bindtarget(image, _on_drop_photo, 'text/uri-list')
 
         _set_photo('')
         return image, _set_photo
