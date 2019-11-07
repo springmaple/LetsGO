@@ -2,7 +2,7 @@ import os
 import traceback
 from threading import Thread
 from tkinter import Tk
-from tkinter.messagebox import showwarning
+from tkinter.messagebox import showerror
 
 import util
 from constants import APP_NAME
@@ -49,14 +49,14 @@ def start_gui():
                         app_main.refresh()
                     except Exception as _ex:
                         top.destroy()
-                        showwarning(APP_NAME, _ex)
+                        showerror(APP_NAME, _ex)
 
             Thread(target=_sync_service_in_bg).start()
 
             _center_window(top, 400, 300)
             root.wait_window(top)
         except Exception as ex:
-            showwarning(APP_NAME, ex)
+            showerror(APP_NAME, ex)
 
     vm = ViewModel(fs, st, settings)
     root = Tk()

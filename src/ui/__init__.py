@@ -121,7 +121,7 @@ class UploadPhotoFrame(Frame):
 
         def wrap_set_photo(fn):
             if wrap_task:
-                showwarning(APP_NAME, f'Please wait while {APP_NAME} is performing other task')
+                showwarning(APP_NAME, f'Please wait while {APP_NAME} is performing other task.')
                 return
             return wrap_load_photo(fn)
 
@@ -131,14 +131,14 @@ class UploadPhotoFrame(Frame):
                 self._vm.save_image(selected_item.code, _filename)
                 set_photo(vm.get_image(selected_item.code))
             except:
-                showwarning(APP_NAME, 'Unsupported image format')
+                showwarning(APP_NAME, 'Unsupported image format.')
             finally:
                 set_listbox_active(True)
 
         @wrap_set_photo
         def on_drop_photo(filename):
             if not selected_item:
-                showwarning(APP_NAME, 'Please select a stock item first')
+                showwarning(APP_NAME, 'Please select a stock item first.')
                 return
             _set_photo(selected_item, filename)
 
@@ -282,7 +282,7 @@ class UploadPhotoFrame(Frame):
             if len(files) == 0:
                 return
             if len(files) > 1:
-                showwarning(APP_NAME, 'You dropped too many files')
+                showwarning(APP_NAME, 'Please drop only one file at a time.')
                 return
             on_drop_photo(files[0])
 

@@ -23,7 +23,7 @@ class SyncProgress(Toplevel):
         super().__init__(master, **kw)
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW",
-                      lambda: showinfo(APP_NAME, 'Synchronizing cloud data with SQL Account'))
+                      lambda: showinfo(APP_NAME, 'Synchronizing cloud data with SQL Account.'))
 
         main_frame = Frame(self)
 
