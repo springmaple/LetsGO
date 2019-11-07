@@ -1,8 +1,10 @@
+import os
 import traceback
 from threading import Thread
 from tkinter import Tk
 from tkinter.messagebox import showwarning
 
+import util
 from constants import APP_NAME
 from firestore import get_firestore_instance, get_firebase_storage
 from settings import Settings
@@ -58,6 +60,8 @@ def start_gui():
 
     vm = ViewModel(fs, st, settings)
     root = Tk()
+
+    root.wm_iconbitmap(util.find_file(os.path.join('res', 'img', 'logo.ico')))
     app_main = AppMain(root, vm, _on_sync)
     root.resizable(False, False)
     _center_window(root, 800, 640)
