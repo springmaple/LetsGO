@@ -23,6 +23,6 @@ def _init_firebase():
         file = util.find_file('service-account.json')
         cred = credentials.Certificate(file)
         firebase_admin.initialize_app(cred, {
-            'storageBucket': 'yotime-2019.appspot.com'
+            'storageBucket': 'letsgo-2019.appspot.com'
         })
         _is_firebase_initialized = True
