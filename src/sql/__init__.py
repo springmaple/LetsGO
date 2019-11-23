@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, tzinfo
 from decimal import Decimal
+from typing import Optional
 
 import pythoncom
 import win32com.client
@@ -14,6 +15,8 @@ from sql.master.stock_item import StockItem
 from sql.master.stock_item_group import StockItemGroup
 from sql.master.stock_item_uom import StockItemUom
 from sql.master.stock_trans import StockTrans
+from sql.trans.outstanding_sales_order import OutstandingSalesOrder
+from sql.trans.sales_order import SalesOrder
 from ui.AppException import AppException
 
 _LOAD_MASTER_PAGE_SIZE = 50
@@ -92,6 +95,45 @@ class Sql:
         data_set = self.com.DBManager.NewDataSet(query)
         for data in util.loop_data_sets(data_set):
             yield StockTrans(data)
+
+    def get_sl_so(self, doc_code: str) -> Optional[SalesOrder]:
+        query = f"SELECT * FROM SL_SO WHERE DocNo='{doc_code}'"
+        data_set = self.com.DBManager.NewDataSet(query)
+        sales_order = None
+        for data in util.loop_data_sets(data_set):
+            sales_order = SalesOrder(data)
+        return sales_order
+
+    def get_outstanding_so(self, doc_code: str) -> Optional[OutstandingSalesOrder]:
+        rpt_obj = self.com.RptObjects.Find('Sales.OutstandingSO.RO')
+        rpt_obj.Params.Find("AllAgent").Value = True
+        rpt_obj.Params.Find("AllArea").Value = True
+        rpt_obj.Params.Find("AllCompany").Value = True
+        rpt_obj.Params.Find("AllDocument").Value = False
+        rpt_obj.Params.Find("AllItem").Value = True
+        rpt_obj.Params.Find("AllItemProject").Value = True
+        rpt_obj.Params.Find("AllTariff").Value = True
+
+        rpt_obj.Params.Find('PrintOutstandingItem').Value = False
+        rpt_obj.Params.Find('PrintFulfilledItem').Value = True
+        rpt_obj.Params.Find("DocumentData").Value = doc_code
+        rpt_obj.Params.Find("IncludeCancelled").Value = False
+        rpt_obj.Params.Find("SelectDate").Value = False
+        rpt_obj.Params.Find("SelectDeliveryDate").Value = False
+        rpt_obj.Params.Find("SortBy").Value = "DocNo"
+        rpt_obj.Params.Find("AllDocProject").Value = True
+        rpt_obj.Params.Find("AllLocation").Value = True
+        rpt_obj.Params.Find("AllCompanyCategory").Value = True
+        rpt_obj.Params.Find("AllBatch").Value = True
+        rpt_obj.Params.Find("HasCategory").Value = False
+        rpt_obj.Params.Find("AllStockGroup").Value = True
+
+        rpt_obj.CalculateReport()
+        data_set = rpt_obj.DataSets.Find("cdsMain")
+        record = None
+        for data in util.loop_data_sets(data_set):
+            record = OutstandingSalesOrder(data)
+        return record
 
     def set_sales_order(self, so: dict):
         biz_object = self.com.BizObjects.Find("SL_SO")

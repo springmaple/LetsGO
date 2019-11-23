@@ -122,8 +122,19 @@ class SyncService:
                 self._sql.set_sales_order(sales_order_dict)
             except Exception as ex:
                 if 'attempt to store duplicate value' in str(ex):
-                    save_checkpoint(sales_order_dict)
-                    continue
+                    sales_order = self._sql.get_sl_so(sales_order_dict['code'])
+                    try:
+                        if sales_order and sales_order.is_cancelled:
+                            # TODO: Store as cancelled
+                            print(sales_order.to_dict())
+                            continue
+                        outstanding_sales_order = self._sql.get_outstanding_so(sales_order_dict['code'])
+                        if outstanding_sales_order:
+                            # TODO: Store as transferred
+                            print(outstanding_sales_order)
+                        continue
+                    finally:
+                        save_checkpoint(sales_order_dict)
                 raise
             else:
                 save_checkpoint(sales_order_dict)
