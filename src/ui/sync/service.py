@@ -1,8 +1,10 @@
 import time
 
 import psutil
+from google.cloud import firestore
 
 import util
+from constants import SalesOrderStatus
 from settings import Settings
 from sql import StockItem, StockItemGroup, Customer, StockItemUom, CustomerBranch, Agent, Sql
 from sql.query import aging_report
@@ -106,38 +108,59 @@ class SyncService:
             doc_ref.set(agent.to_dict())
             yield agent
 
-    def download_sales_orders(self):
+    def sync_sales_orders(self):
+
+        def _get_item_quantities(items):
+            result = {}
+            for item in items:
+                item_code = util.esc_key(item['item']['code'])
+                item_quantity = item['quantity'] * int(item['uom']['rate'])
+                if item_code not in result:
+                    result[item_code] = 0
+                result[item_code] += item_quantity
+            return result
+
+        @firestore.transactional
+        def _update(transaction, so_code, so_dict):
+            item_quantities = _get_item_quantities(so_dict['items'])
+            to_save = []
+            for item_code, item_quantity in item_quantities.items():
+                item_doc = self._fs.document(f'data/{self._company_code}/itemQuantities/{item_code}')
+                current_quantity = 0
+                item_quantity_dict = item_doc.get(transaction=transaction).to_dict()
+                if item_quantity_dict:
+                    current_quantity = item_quantity_dict['open']
+                current_quantity -= item_quantity
+                to_save.append((item_doc, {'open': current_quantity}))
+
+            for item_doc, item_data in to_save:
+                transaction.set(item_doc, item_data)
+
+            so_ref = self._fs.document(f'data/{self._company_code}/salesOrders/{so_code}')
+            transaction.set(so_ref, so_dict)
+
         collection = f'data/{self._company_code}/salesOrders'
-        sync_key = 'created_on'
-        sync_since = self._settings.get_prop(self._company_code, _LAST_SALES_ORDER_TIMESTAMP)
-
-        def save_checkpoint(_sales_order_dict):
-            self._settings.set_prop(
-                self._company_code, _LAST_SALES_ORDER_TIMESTAMP, _sales_order_dict[sync_key])
-
-        for index, doc in enumerate(
-                self._fs.collection(collection).where(sync_key, '>', sync_since).order_by(sync_key).stream(), start=1):
+        for doc in self._fs.collection(collection).where('status', '==', SalesOrderStatus.Open.value).stream():
             sales_order_dict = doc.to_dict()
             try:
                 self._sql.set_sales_order(sales_order_dict)
             except Exception as ex:
                 if 'attempt to store duplicate value' in str(ex):
-                    sales_order = self._sql.get_sl_so(sales_order_dict['code'])
-                    try:
-                        if sales_order and sales_order.is_cancelled:
-                            # TODO: Store as cancelled
-                            print(sales_order.to_dict())
-                            continue
-                        outstanding_sales_order = self._sql.get_outstanding_so(sales_order_dict['code'])
-                        if outstanding_sales_order:
-                            # TODO: Store as transferred
-                            print(outstanding_sales_order)
+                    sales_order_code = sales_order_dict['code']
+                    sales_order = self._sql.get_sl_so(sales_order_code)
+                    if sales_order and sales_order.is_cancelled:
+                        sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
+                        _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                        yield sales_order_dict
                         continue
-                    finally:
-                        save_checkpoint(sales_order_dict)
+                    outstanding_sales_order = self._sql.get_outstanding_so(sales_order_code)
+                    if outstanding_sales_order:
+                        sales_order_dict['status'] = SalesOrderStatus.Transferred.value
+                        _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                    yield sales_order_dict
+                    continue
                 raise
             else:
-                save_checkpoint(sales_order_dict)
                 yield sales_order_dict
 
     def upload_aging_report(self):

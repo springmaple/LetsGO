@@ -98,10 +98,10 @@ class SyncProgress(Toplevel):
             self._cb_agents.set_text(f'Agents ({i})')
         self._cb_agents.set_checked()
 
-        self._progress_text.set('Preparing to download sales orders')
+        self._progress_text.set('Preparing to synchronize sales orders')
         self._cb_sales_orders.set_text('Sales Orders (0)')
-        for i, sales_order in enumerate(ss.download_sales_orders(), start=1):
-            self._progress_text.set(f'Downloading sales order: {sales_order["code"]}')
+        for i, sales_order in enumerate(ss.sync_sales_orders(), start=1):
+            self._progress_text.set(f'Synchronizing sales order: {sales_order["code"]} ({sales_order["status"]})')
             self._cb_sales_orders.set_text(f'Sales Orders ({i})')
         self._cb_sales_orders.set_checked()
 
