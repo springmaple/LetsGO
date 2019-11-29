@@ -5,6 +5,8 @@ from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import showwarning
 from typing import Any
 
+from PIL import Image
+
 import util
 from constants import APP_NAME, APP_VERSION
 from ui.tk_dnd import TkDND, parse_files_from_text
@@ -274,7 +276,13 @@ class UploadPhotoFrame(Frame):
 
         def _set_photo(filename: str):
             nonlocal photo, image
-            _photo = PhotoImage(file=filename) if filename else photo
+            if filename:
+                _image = Image.open(filename)
+                _image.thumbnail((480, 480), Image.ANTIALIAS)
+                _image.save(filename)
+                _photo = PhotoImage(file=filename)
+            else:
+                _photo = photo
             image.configure(image=_photo)
             image.image = _photo
 
