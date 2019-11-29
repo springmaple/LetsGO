@@ -83,22 +83,26 @@ def download_cache_items(company_code, fs):
 def _to_png(filename: str):
     dwebp = os.path.join(_get_webp_dir(), 'dwebp.exe')
     out = os.path.join(TMP_DIR, 'out.png')
-    subprocess.call([dwebp, filename, '-o', out, '-scale', '480', '480'], cwd=_get_webp_dir())
+    subprocess.call([dwebp, filename, '-o', out], cwd=_get_webp_dir())
     return out
 
 
 def _to_webp(filename: str):
+    max_size = 640
     image = Image.open(filename)
     width, height = image.size
+    longer, shorter, should_rotate = (width, height, False) if width > height else (height, width, True)
+    if longer > max_size:
+        shorter = int(shorter / longer * max_size)
+        longer = max_size
+    final_width, final_height = (shorter, longer) if should_rotate else (longer, shorter)
+
     prog = os.path.join(_get_webp_dir(), 'cwebp.exe')
     out = os.path.join(TMP_DIR, 'out.webp')
-    shorter_side = width if width < height else height
-    final_size = 480 if shorter_side > 480 else shorter_side
     subprocess.call([prog, filename,
                      '-o', out,
                      '-m', '6',
-                     '-crop', '0', '0', str(shorter_side), str(shorter_side),
-                     '-resize', str(final_size), str(final_size),
+                     '-resize', str(final_width), str(final_height),
                      '-jpeg_like'], cwd=_get_webp_dir())
     return out
 
