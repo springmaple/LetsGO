@@ -89,7 +89,7 @@ def _to_png(filename: str):
 
 def _to_webp(filename: str):
     image = Image.open(filename)
-    image.thumbnail((640, 640), Image.ANTIALIAS)
+    image.thumbnail((720, 720), Image.ANTIALIAS)
     width, height = image.size
 
     prog = os.path.join(_get_webp_dir(), 'cwebp.exe')
