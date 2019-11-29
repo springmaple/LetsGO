@@ -140,28 +140,33 @@ class SyncService:
             transaction.set(so_ref, so_dict)
 
         collection = f'data/{self._company_code}/salesOrders'
-        for doc in self._fs.collection(collection).where('status', '==', SalesOrderStatus.Open.value).stream():
+        for doc in self._fs.collection(collection) \
+                .where('status', '==', SalesOrderStatus.Open.value) \
+                .order_by('created_on').stream():
             sales_order_dict = doc.to_dict()
-            try:
-                self._sql.set_sales_order(sales_order_dict)
-            except Exception as ex:
-                if 'attempt to store duplicate value' in str(ex):
-                    sales_order_code = sales_order_dict['code']
-                    sales_order = self._sql.get_sl_so(sales_order_code)
-                    if sales_order and sales_order.is_cancelled:
-                        sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
-                        _update(self._fs.transaction(), sales_order_code, sales_order_dict)
-                        yield sales_order_dict
-                        continue
+            sales_order_code = sales_order_dict['code']
+            yield sales_order_dict
+
+            sales_order = self._sql.get_sl_so(sales_order_code)
+            if sales_order:
+                if sales_order.is_cancelled:
+                    sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
+                    _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                    yield 'cancelled'
+                    continue
+                else:
                     outstanding_sales_order = self._sql.get_outstanding_so(sales_order_code)
                     if outstanding_sales_order:
                         sales_order_dict['status'] = SalesOrderStatus.Transferred.value
                         _update(self._fs.transaction(), sales_order_code, sales_order_dict)
-                    yield sales_order_dict
+                        yield 'transferred'
+                        continue
+                    yield 'nochange'
                     continue
-                raise
             else:
-                yield sales_order_dict
+                self._sql.set_sales_order(sales_order_dict)
+                yield 'added'
+                continue
 
     def upload_aging_report(self):
         collection = f'data/{self._company_code}'

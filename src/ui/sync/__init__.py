@@ -99,10 +99,23 @@ class SyncProgress(Toplevel):
         self._cb_agents.set_checked()
 
         self._progress_text.set('Preparing to synchronize sales orders')
-        self._cb_sales_orders.set_text('Sales Orders (0)')
-        for i, sales_order in enumerate(ss.sync_sales_orders(), start=1):
-            self._progress_text.set(f'Synchronizing sales order: {sales_order["code"]} ({sales_order["status"]})')
-            self._cb_sales_orders.set_text(f'Sales Orders ({i})')
+        self._cb_sales_orders.set_text('Sales Orders (Synchronizing)')
+        status_count = {'added': 0, 'cancelled': 0, 'transferred': 0, 'nochange': 0}
+        for update in ss.sync_sales_orders():
+            if type(update) == str:
+                status_count[update] += 1
+                message = ''
+                if status_count["added"] > 0:
+                    message += f'New ({status_count["added"]}) '
+                if status_count["transferred"] > 0:
+                    message += f'Transferred ({status_count["transferred"]}) '
+                if status_count["cancelled"] > 0:
+                    message += f'Cancelled ({status_count["cancelled"]}) '
+                if status_count["nochange"] > 0:
+                    message += f'No Update ({status_count["nochange"]}) '
+                self._cb_sales_orders.set_text(f'Sales Orders - {message}')
+            else:
+                self._progress_text.set(f'Checking sales order: {update["code"]}')
         self._cb_sales_orders.set_checked()
 
         self._progress_text.set('Preparing to upload aging report')
