@@ -88,21 +88,16 @@ def _to_png(filename: str):
 
 
 def _to_webp(filename: str):
-    max_size = 640
     image = Image.open(filename)
+    image.thumbnail((640, 640), Image.ANTIALIAS)
     width, height = image.size
-    longer, shorter, should_rotate = (width, height, False) if width > height else (height, width, True)
-    if longer > max_size:
-        shorter = int(shorter / longer * max_size)
-        longer = max_size
-    final_width, final_height = (shorter, longer) if should_rotate else (longer, shorter)
 
     prog = os.path.join(_get_webp_dir(), 'cwebp.exe')
     out = os.path.join(TMP_DIR, 'out.webp')
     subprocess.call([prog, filename,
                      '-o', out,
                      '-m', '6',
-                     '-resize', str(final_width), str(final_height),
+                     '-resize', str(width), str(height),
                      '-jpeg_like'], cwd=_get_webp_dir())
     return out
 
