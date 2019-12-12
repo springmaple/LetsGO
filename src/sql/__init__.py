@@ -140,80 +140,82 @@ class Sql:
         main_data = biz_object.DataSets.Find("MainDataSet")
         detail_data = biz_object.DataSets.Find("cdsDocDetail")
 
-        agent = so['agent']
-        customer = so['customer']
-        bill_to = so['bill_to']
-        ship_to = so['ship_to']
+        try:
+            agent = so['agent']
+            customer = so['customer']
+            bill_to = so['bill_to']
+            ship_to = so['ship_to']
 
-        today = datetime.now(tz=CustomTimeZone())
-        doc_date = datetime.fromtimestamp(so['created_on'], tz=CustomTimeZone())
+            today = datetime.now(tz=CustomTimeZone())
+            doc_date = datetime.fromtimestamp(so['created_on'], tz=CustomTimeZone())
 
-        biz_object.New()
-        main_data.FindField('DocKey').Value = -1
-        main_data.FindField('DocNo').AsString = so['code']
-        main_data.FindField('DocDate').Value = doc_date
-        main_data.FindField('PostDate').Value = today
-        main_data.FindField('Agent').AsString = agent['code']
-        main_data.FindField('Description').AsString = so['description']
+            biz_object.New()
+            main_data.FindField('DocKey').Value = -1
+            main_data.FindField('DocNo').AsString = so['code']
+            main_data.FindField('DocDate').Value = doc_date
+            main_data.FindField('PostDate').Value = today
+            main_data.FindField('Agent').AsString = agent['code']
+            main_data.FindField('Description').AsString = so['description']
 
-        # Customer
-        main_data.FindField('Code').AsString = customer['code']  # Customer Account
-        main_data.FindField('CompanyName').AsString = customer['company_name']
-        main_data.FindField('Area').AsString = customer['area']
-        main_data.FindField('Terms').AsString = customer['credit_terms']
+            # Customer
+            main_data.FindField('Code').AsString = customer['code']  # Customer Account
+            main_data.FindField('CompanyName').AsString = customer['company_name']
+            main_data.FindField('Area').AsString = customer['area']
+            main_data.FindField('Terms').AsString = customer['credit_terms']
 
-        # Billing Info
-        main_data.FindField('Attention').AsString = bill_to['attention']
-        main_data.FindField('Phone1').AsString = bill_to['phone'][0]  # Optional
-        main_data.FindField('Fax1').AsString = bill_to['fax'][0]  # Optional
-        main_data.FindField('Address1').AsString = bill_to['address'][0]
-        main_data.FindField('Address2').AsString = bill_to['address'][1]
-        main_data.FindField('Address3').AsString = bill_to['address'][2]
-        main_data.FindField('Address4').AsString = bill_to['address'][3]
+            # Billing Info
+            main_data.FindField('Attention').AsString = bill_to['attention']
+            main_data.FindField('Phone1').AsString = bill_to['phone'][0]  # Optional
+            main_data.FindField('Fax1').AsString = bill_to['fax'][0]  # Optional
+            main_data.FindField('Address1').AsString = bill_to['address'][0]
+            main_data.FindField('Address2').AsString = bill_to['address'][1]
+            main_data.FindField('Address3').AsString = bill_to['address'][2]
+            main_data.FindField('Address4').AsString = bill_to['address'][3]
 
-        # Delivery Info
-        main_data.FindField('BranchName').AsString = ship_to['name']
-        main_data.FindField('DAttention').AsString = ship_to['attention']
-        main_data.FindField('DPhone1').AsString = ship_to['phone'][0]  # Optional
-        main_data.FindField('DFax1').AsString = ship_to['fax'][0]  # Optional
-        main_data.FindField('DAddress1').AsString = ship_to['address'][0]
-        main_data.FindField('DAddress2').AsString = ship_to['address'][1]
-        main_data.FindField('DAddress3').AsString = ship_to['address'][2]
-        main_data.FindField('DAddress4').AsString = ship_to['address'][3]
+            # Delivery Info
+            main_data.FindField('BranchName').AsString = ship_to['name']
+            main_data.FindField('DAttention').AsString = ship_to['attention']
+            main_data.FindField('DPhone1').AsString = ship_to['phone'][0]  # Optional
+            main_data.FindField('DFax1').AsString = ship_to['fax'][0]  # Optional
+            main_data.FindField('DAddress1').AsString = ship_to['address'][0]
+            main_data.FindField('DAddress2').AsString = ship_to['address'][1]
+            main_data.FindField('DAddress3').AsString = ship_to['address'][2]
+            main_data.FindField('DAddress4').AsString = ship_to['address'][3]
 
-        for so_item in so['items']:
-            detail_data.Append()
-            detail_data.FindField('DtlKey').Value = -1
-            detail_data.FindField('DocKey').Value = -1
-            detail_data.FindField('Seq').Value = so_item['seq']
-            detail_data.FindField('ItemCode').AsString = so_item['item']['code']
-            detail_data.FindField('Description').AsString = so_item['description']
-            detail_data.FindField('Qty').AsFloat = so_item['quantity']
-            detail_data.FindField('UOM').AsString = so_item['uom']['uom']
-            detail_data.FindField('Tax').AsString = ""
-            detail_data.FindField('TaxRate').AsString = ""
-            detail_data.FindField('TaxInclusive').Value = 0
-            detail_data.FindField('UnitPrice').AsFloat = so_item['price']
-            detail_data.FindField('Amount').AsFloat = str(Decimal(so_item['price']) * Decimal(so_item['quantity']))
-            detail_data.FindField('TaxAmt').AsFloat = 0
-            detail_data.FindField('Remark1').AsString = so_item.get('remark', '')
-            detail_data.FindField('Remark2').AsString = so_item.get('remark_2', '')
-            detail_data.Post()
+            for so_item in so['items']:
+                detail_data.Append()
+                detail_data.FindField('DtlKey').Value = -1
+                detail_data.FindField('DocKey').Value = -1
+                detail_data.FindField('Seq').Value = so_item['seq']
+                detail_data.FindField('ItemCode').AsString = so_item['item']['code']
+                detail_data.FindField('Description').AsString = so_item['description']
+                detail_data.FindField('Qty').AsFloat = so_item['quantity']
+                detail_data.FindField('UOM').AsString = so_item['uom']['uom']
+                detail_data.FindField('Tax').AsString = ""
+                detail_data.FindField('TaxRate').AsString = ""
+                detail_data.FindField('TaxInclusive').Value = 0
+                detail_data.FindField('UnitPrice').AsFloat = so_item['price']
+                detail_data.FindField('Amount').AsFloat = str(Decimal(so_item['price']) * Decimal(so_item['quantity']))
+                detail_data.FindField('TaxAmt').AsFloat = 0
+                detail_data.FindField('Remark1').AsString = so_item.get('remark', '')
+                detail_data.FindField('Remark2').AsString = so_item.get('remark_2', '')
+                detail_data.Post()
 
-        remark_1 = so.get('remark', '').strip()
-        if remark_1:
-            detail_data.Append()
-            detail_data.FindField('Description').AsString = remark_1
-            detail_data.Post()
+            remark_1 = so.get('remark', '').strip()
+            if remark_1:
+                detail_data.Append()
+                detail_data.FindField('Description').AsString = remark_1
+                detail_data.Post()
 
-        remark_2 = so.get('remark_2', '').strip()
-        if remark_2:
-            detail_data.Append()
-            detail_data.FindField('Description').AsString = remark_2
-            detail_data.Post()
+            remark_2 = so.get('remark_2', '').strip()
+            if remark_2:
+                detail_data.Append()
+                detail_data.FindField('Description').AsString = remark_2
+                detail_data.Post()
 
-        biz_object.Save()
-        biz_object.Close()
+            biz_object.Save()
+        finally:
+            biz_object.Close()
 
 
 class CustomTimeZone(tzinfo):
