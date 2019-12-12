@@ -139,34 +139,40 @@ class SyncService:
             so_ref = self._fs.document(f'data/{self._company_code}/salesOrders/{so_code}')
             transaction.set(so_ref, so_dict)
 
-        collection = f'data/{self._company_code}/salesOrders'
-        for doc in self._fs.collection(collection) \
-                .where('status', '==', SalesOrderStatus.Open.value) \
-                .order_by('created_on').stream():
-            sales_order_dict = doc.to_dict()
-            sales_order_code = sales_order_dict['code']
-            yield sales_order_dict
+        with open('sales_order_log.txt', mode='w') as log:
+            collection = f'data/{self._company_code}/salesOrders'
+            print(collection, file=log)
+            for doc in self._fs.collection(collection) \
+                    .where('status', '==', SalesOrderStatus.Open.value) \
+                    .order_by('created_on').stream():
+                sales_order_dict = doc.to_dict()
+                sales_order_code = sales_order_dict['code']
+                print('Server:', sales_order_code, file=log)
+                yield sales_order_dict
 
-            sales_order = self._sql.get_sl_so(sales_order_code)
-            if sales_order:
-                if sales_order.is_cancelled:
-                    sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
-                    _update(self._fs.transaction(), sales_order_code, sales_order_dict)
-                    yield 'cancelled'
-                    continue
-                else:
-                    outstanding_sales_order = self._sql.get_outstanding_so(sales_order_code)
-                    if outstanding_sales_order:
-                        sales_order_dict['status'] = SalesOrderStatus.Transferred.value
+                sales_order = self._sql.get_sl_so(sales_order_code)
+                if sales_order:
+                    if sales_order.is_cancelled:
+                        sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
                         _update(self._fs.transaction(), sales_order_code, sales_order_dict)
-                        yield 'transferred'
+                        print('Cancelled', file=log)
+                        yield 'cancelled'
                         continue
-                    yield 'nochange'
+                    else:
+                        outstanding_sales_order = self._sql.get_outstanding_so(sales_order_code)
+                        if outstanding_sales_order:
+                            sales_order_dict['status'] = SalesOrderStatus.Transferred.value
+                            _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                            yield 'transferred'
+                            continue
+                        print('NoChange', file=log)
+                        yield 'nochange'
+                        continue
+                else:
+                    self._sql.set_sales_order(sales_order_dict)
+                    print('New', file=log)
+                    yield 'added'
                     continue
-            else:
-                self._sql.set_sales_order(sales_order_dict)
-                yield 'added'
-                continue
 
     def upload_aging_report(self):
         collection = f'data/{self._company_code}'

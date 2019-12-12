@@ -107,3 +107,4 @@ venv.bak/
 
 settings.json
 service-account.json
+sales_order_log.txt
