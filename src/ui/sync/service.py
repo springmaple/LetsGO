@@ -141,10 +141,10 @@ class SyncService:
 
         with open('sales_order_log.txt', mode='w') as log:
             collection = f'data/{self._company_code}/salesOrders'
-            print(collection, file=log)
-            for doc in self._fs.collection(collection) \
-                    .where('status', '==', SalesOrderStatus.Open.value) \
-                    .order_by('created_on').stream():
+            all_docs = [doc.to_dict() for doc in self._fs.collection(collection).where(
+                'status', '==', SalesOrderStatus.Open.value).order_by('created_on').stream()]
+            print(collection, "total", len(all_docs), file=log)
+            for doc in all_docs:
                 sales_order_dict = doc.to_dict()
                 sales_order_code = sales_order_dict['code']
                 print('Server:', sales_order_code, file=log)
@@ -163,6 +163,7 @@ class SyncService:
                         if outstanding_sales_order:
                             sales_order_dict['status'] = SalesOrderStatus.Transferred.value
                             _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                            print('Transferred', file=log)
                             yield 'transferred'
                             continue
                         print('NoChange', file=log)
