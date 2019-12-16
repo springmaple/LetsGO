@@ -144,8 +144,7 @@ class SyncService:
             all_docs = [doc.to_dict() for doc in self._fs.collection(collection).where(
                 'status', '==', SalesOrderStatus.Open.value).order_by('created_on').stream()]
             print(collection, "total", len(all_docs), file=log)
-            for doc in all_docs:
-                sales_order_dict = doc.to_dict()
+            for sales_order_dict in all_docs:
                 sales_order_code = sales_order_dict['code']
                 print('Server:', sales_order_code, file=log)
                 yield sales_order_dict
