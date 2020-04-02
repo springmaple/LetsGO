@@ -2,6 +2,7 @@ import datetime
 import decimal
 import json
 
+import util
 from sql.keywords import Keywords
 
 
@@ -21,6 +22,7 @@ class DictEncoder(json.JSONEncoder):
 class Entity:
     def __init__(self, data):
         self._data = data
+        self._date_format = None
 
     def _get_str(self, field_name):
         return self._data.FindField(field_name).AsString
@@ -48,8 +50,10 @@ class Entity:
         raise Exception(f'unknown boolean value {val}')
 
     def _get_date(self, field_name):
+        if not self._date_format:
+            self._date_format = util.guess_system_date_format()
         val = self._data.FindField(field_name).AsString
-        dt_obj = datetime.datetime.strptime(str(val), '%d/%m/%Y')
+        dt_obj = datetime.datetime.strptime(str(val), self._date_format)
         return dt_obj.date()
 
     def to_dict(self):
