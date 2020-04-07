@@ -19,7 +19,7 @@ _ST_TRANS_LAST_TRANS_NO = 'last_trans_no_st_trans'
 
 
 def is_sql_running() -> bool:
-    return "SQLACC.exe" in (p.name() for p in psutil.process_iter())
+    return "SQLACC.exe" in (p.info['name'] for p in psutil.process_iter(['name']))
 
 
 class SyncService:
