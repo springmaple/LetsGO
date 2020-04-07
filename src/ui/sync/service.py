@@ -158,7 +158,7 @@ class SyncService:
                         yield 'cancelled'
                         continue
                     else:
-                        outstanding_sales_order = self._sql.get_outstanding_so(sales_order_code)
+                        outstanding_sales_order = self._sql.get_sl_invoice_dtl(sales_order_code)
                         if outstanding_sales_order:
                             sales_order_dict['status'] = SalesOrderStatus.Transferred.value
                             _update(self._fs.transaction(), sales_order_code, sales_order_dict)
