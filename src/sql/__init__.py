@@ -15,6 +15,7 @@ from sql.master.stock_item import StockItem
 from sql.master.stock_item_group import StockItemGroup
 from sql.master.stock_item_uom import StockItemUom
 from sql.master.stock_trans import StockTrans
+from sql.trans.invoice_dtl import InvoiceDTL
 from sql.trans.outstanding_sales_order import OutstandingSalesOrder
 from sql.trans.sales_order import SalesOrder
 from ui.AppException import AppException
@@ -103,6 +104,20 @@ class Sql:
         for data in util.loop_data_sets(data_set):
             sales_order = SalesOrder(data)
         return sales_order
+
+    def get_sl_invoice_dtl(self, doc_code: str) -> Optional[SalesOrder]:
+        """
+        This table stores all transferred items from Sales Order to Invoice,
+        count(*) equals to total item count in sales order.
+
+        @see "Example-SL_DO to SL_IV" in "https://wiki.sql.com.my/wiki/SDK_Live#Example_External_Program"
+        """
+        query = f"SELECT FIRST 1 * FROM SL_IVDTL WHERE FromDocKey=(SELECT DocKey FROM SL_SO WHERE DocNo='{doc_code}')"
+        data_set = self.com.DBManager.NewDataSet(query)
+        invoice_dtl = None
+        for data in util.loop_data_sets(data_set):
+            invoice_dtl = InvoiceDTL(data)
+        return invoice_dtl
 
     def get_outstanding_so(self, doc_code: str) -> Optional[OutstandingSalesOrder]:
         rpt_obj = self.com.RptObjects.Find('Sales.OutstandingSO.RO')
