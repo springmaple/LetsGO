@@ -7,7 +7,7 @@ from typing import Any
 
 from PIL import Image
 
-import util
+from server import util
 from constants import APP_NAME, APP_VERSION
 from ui.tk_dnd import TkDND, parse_files_from_text
 from ui.view_model import ViewModel, Item, Profile

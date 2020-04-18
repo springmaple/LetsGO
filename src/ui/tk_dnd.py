@@ -2,7 +2,7 @@ import os
 import struct
 import tkinter
 
-import util
+from server import util
 
 
 def parse_files_from_text(text: str):

@@ -4,7 +4,7 @@ from threading import Thread
 from tkinter import Tk
 from tkinter.messagebox import showwarning, showerror
 
-import util
+from server import util
 from constants import APP_NAME
 from firestore import get_firestore_instance, get_firebase_storage
 from settings import Settings

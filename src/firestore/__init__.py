@@ -1,7 +1,7 @@
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
-import util
+from server import util
 
 
 def get_firebase_storage():

@@ -1,6 +1,6 @@
 import json
 
-import util
+from server import util
 
 _FILE_NAME = 'settings.json'
 

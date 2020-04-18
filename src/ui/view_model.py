@@ -4,7 +4,7 @@ import subprocess
 
 from PIL import Image
 
-import util
+from server import util
 from constants import TMP_DIR
 from settings import Settings
 
