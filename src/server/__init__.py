@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 
 from constants import TMP_DIR
 from firestore import get_firebase_storage
@@ -12,21 +12,18 @@ from settings import Settings
 app = Flask(__name__)
 
 
-@app.route('/')
-def hello():
-    return f'Hello, world!'
-
-
 @app.route('/get_profiles')
 def get_profiles():
     settings = Settings()
-    return jsonify([Profile(profile_data) for profile_data in settings.list_profiles()])
+    profiles = (Profile(profile_data) for profile_data in settings.list_profiles())
+    return jsonify([profile.to_dict() for profile in profiles])
 
 
 @app.route('/get_items')
 def get_items():
     company_code = request.args.get('company_code')
-    return jsonify(FirestoreItems(company_code).get_items())
+    items = FirestoreItems(company_code).get_items()
+    return jsonify([item.to_dict() for item in items])
 
 
 @app.route('/get_photo')
@@ -36,7 +33,7 @@ def get_photo():
     storage = get_firebase_storage()
     blob = storage.get_blob(f'{company_code}/{item_code}.webp')
     if not blob:
-        return None
+        return abort(404)
     blob.download_to_filename(os.path.join(TMP_DIR, 'dl.webp'))
     return get_file(TMP_DIR, 'dl.webp')
 
