@@ -1,15 +1,22 @@
+import json
 import os
+from queue import Queue, Empty
+from threading import Thread, Lock
 
-from flask import Flask, request, jsonify, send_from_directory, abort
+from flask import Flask, request, jsonify, send_from_directory, abort, Response
 
 from constants import TMP_DIR
 from firestore import get_firebase_storage
 from server import util
 from server.firestore_items import FirestoreItems
 from server.objects import Profile, Item
+from server.sql_acc_sync import SqlAccSynchronizer
 from settings import Settings
 
 app = Flask(__name__)
+event_queue = Queue()
+lock = Lock()
+sync_sql_thread = None
 
 
 @app.route('/get_profiles')
@@ -21,9 +28,10 @@ def get_profiles():
 
 @app.route('/get_items')
 def get_items():
-    company_code = request.args.get('company_code')
-    items = FirestoreItems(company_code).get_items()
-    return jsonify([item.to_dict() for item in items])
+    with lock:
+        company_code = request.args.get('company_code')
+        items = FirestoreItems(company_code).get_items()
+        return jsonify([item.to_dict() for item in items])
 
 
 @app.route('/get_photo')
@@ -45,7 +53,43 @@ def set_photo():
 
 @app.route('/sync_sql_acc')
 def sync_sql_acc():
-    request.args.get('company_code')
+    global sync_sql_thread
+    with lock:
+        if sync_sql_thread and sync_sql_thread.is_alive():
+            return
+
+        company_code = request.args.get('company_code')
+        sql_acc_synchronizer = SqlAccSynchronizer(company_code)
+
+        def sync():
+            try:
+                for data in sql_acc_synchronizer.start_sync():
+                    event_queue.put(('sync', data))
+                FirestoreItems(company_code).delete_cache()
+            except Exception as ex:
+                event_queue.put(('sync', {'type': 'error', 'data': str(ex)}))
+            else:
+                event_queue.put(('sync', {'type': 'complete'}))
+
+        sync_sql_thread = Thread(target=sync)
+        sync_sql_thread.start()
+        return '', 204
+
+
+@app.route('/event_source')
+def event_source():
+    def get_message():
+        try:
+            return event_queue.get(True, 1.0)
+        except Empty:
+            return "ping", None
+
+    def event_stream():
+        while True:
+            event, data = get_message()
+            yield f'event: {event}\ndata: {json.dumps(data)}\n\n'
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 
 def get_file(directory, filename):

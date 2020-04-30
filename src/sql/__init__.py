@@ -49,7 +49,7 @@ class Sql:
                 company_profile = CompanyProfile(data)
             if company_profile and company_profile.company_name == company_name:
                 return
-        raise AppException(f'Please login to {company_name}')
+        raise Exception(f'Please login to {company_name}')
 
     def count_master_data(self, table_name, last_modified=None):
         query = f'SELECT COUNT(*) AS Total FROM {table_name}'
