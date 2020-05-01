@@ -6,6 +6,7 @@ click==7.1.1
 enum34==1.1.10
 firebase-admin==4.0.1
 Flask==1.1.2
+Flask-Cors==3.0.8
 futures==3.1.1
 google-api-core==1.17.0
 google-api-python-client==1.8.0

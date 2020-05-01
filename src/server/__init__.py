@@ -4,6 +4,7 @@ from queue import Queue, Empty
 from threading import Thread, Lock
 
 from flask import Flask, request, jsonify, send_from_directory, abort, Response
+from flask_cors import CORS
 
 from constants import TMP_DIR
 from firestore import get_firebase_storage
@@ -14,6 +15,7 @@ from server.sql_acc_sync import SqlAccSynchronizer
 from settings import Settings
 
 app = Flask(__name__)
+CORS(app)
 event_queue = Queue()
 lock = Lock()
 sync_sql_thread = None
