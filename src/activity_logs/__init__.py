@@ -29,7 +29,10 @@ class ActivityLog:
 
     def i(self, *args):
         dt = datetime.now().strftime('%H%M%S')
-        print(f'[{dt}] ', *args, file=self._fs, flush=True)
+        try:
+            print(f'[{dt}] ', *args, file=self._fs, flush=True)
+        except:
+            pass
 
 
 class ActivityLogMock:
