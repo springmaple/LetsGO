@@ -7,8 +7,8 @@ from typing import Any
 
 from PIL import Image
 
-from server import util
 from constants import APP_NAME, APP_VERSION
+from server import util
 from ui.tk_dnd import TkDND, parse_files_from_text
 from ui.view_model import ViewModel, Item, Profile
 
@@ -16,7 +16,7 @@ _photo_executor = ThreadPoolExecutor(max_workers=1)
 
 
 class AppMain:
-    def __init__(self, master: Tk, vm: ViewModel, on_sync):
+    def __init__(self, master: Tk, vm: ViewModel, on_sync, on_open_log):
         def _on_close():
             _photo_executor.shutdown()
             master.destroy()
@@ -36,6 +36,9 @@ class AppMain:
 
         company_frame = ProfileFrame(main_top_frame, vm, _on_profile_changed)
         company_frame.pack(side=LEFT, fill='x', pady=(0, 10))
+
+        activity_log_frame = ActivityLogFrame(main_top_frame, on_open_log)
+        activity_log_frame.pack(side=RIGHT)
 
         sync_frame = SyncFrame(main_top_frame, lambda: on_sync(vm.current_profile))
         sync_frame.pack(side=RIGHT)
@@ -86,8 +89,16 @@ class ProfileFrame(Frame):
 class SyncFrame(Frame):
     def __init__(self, parent, on_click, **kw):
         super().__init__(parent, **kw)
-        text = Label(self, text='Sync Now', fg='blue', cursor='hand2')
-        text.bind("<Button-1>", lambda e: on_click())
+        text = Label(self, text='[ Sync Now ]', fg='blue', cursor='hand2')
+        text.bind('<Button-1>', lambda e: on_click())
+        text.pack()
+
+
+class ActivityLogFrame(Frame):
+    def __init__(self, parent, on_click, **kw):
+        super().__init__(parent, **kw)
+        text = Label(self, text='[ Open Logs ]', fg='blue', cursor='hand2')
+        text.bind('<Button-1>', lambda e: on_click())
         text.pack()
 
 

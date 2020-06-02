@@ -1,8 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 
-from server import util
-
 
 def get_firebase_storage():
     _init_firebase()
@@ -20,6 +18,7 @@ _is_firebase_initialized = False
 def _init_firebase():
     global _is_firebase_initialized
     if not _is_firebase_initialized:
+        from server import util
         file = util.find_file('service-account.json')
         cred = credentials.Certificate(file)
         firebase_admin.initialize_app(cred, {

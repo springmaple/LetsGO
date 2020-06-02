@@ -4,9 +4,9 @@ from threading import Thread
 from tkinter import Tk
 from tkinter.messagebox import showwarning, showerror
 
-from server import util
-from constants import APP_NAME
+from constants import APP_NAME, ACTIVITY_LOGS_DIR
 from firestore import get_firestore_instance, get_firebase_storage
+from server import util
 from settings import Settings
 from sql import Sql
 from ui import AppMain, ViewModel, Profile
@@ -30,6 +30,9 @@ def start_gui():
     settings = Settings()
     fs = get_firestore_instance()
     st = get_firebase_storage()
+
+    def _on_open_logs():
+        os.system(f'explorer.exe "{ACTIVITY_LOGS_DIR}"')
 
     def _on_sync(profile: Profile):
         try:
@@ -68,7 +71,7 @@ def start_gui():
     root = Tk()
 
     root.wm_iconbitmap(util.find_file(os.path.join('res', 'img', 'logo.ico')))
-    app_main = AppMain(root, vm, _on_sync)
+    app_main = AppMain(root, vm, _on_sync, _on_open_logs)
     root.resizable(False, False)
     _center_window(root, 800, 640)
     root.mainloop()
