@@ -4,8 +4,8 @@ import subprocess
 
 from PIL import Image
 
-from server import util
 from constants import TMP_DIR
+from server import util
 from settings import Settings
 
 
@@ -53,15 +53,22 @@ class ViewModel:
     def _company_code(self):
         return self.current_profile.company_code
 
-    def _get_items(self):
+    def _get_items(self, recovery_mode=False):
         cache = get_cache_items_path(self._company_code())
         if os.path.exists(cache):
             with open(cache, mode='r') as f:
-                items = json.load(f)
-                return [Item(item) for item in items]
+                try:
+                    items = json.load(f)
+                    return [Item(item) for item in items]
+                except:
+                    if recovery_mode:
+                        raise
+            # auto recover from corrupted cache file.
+            os.unlink(cache)
+            return self._get_items(recovery_mode=True)
 
         list(download_cache_items(self._company_code(), self._fs))
-        return self._get_items()
+        return self._get_items(recovery_mode)
 
 
 def get_cache_items_path(company_code):
