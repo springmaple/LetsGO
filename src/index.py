@@ -4,6 +4,7 @@ from threading import Thread
 from tkinter import Tk
 from tkinter.messagebox import showwarning, showerror
 
+from activity_logs import ActivityLog
 from constants import APP_NAME, ACTIVITY_LOGS_DIR
 from firestore import get_firestore_instance, get_firebase_storage
 from server import util
@@ -45,18 +46,19 @@ def start_gui():
             top.grab_set()
 
             def _sync_service_in_bg():
-                with Sql() as sql:
-                    ss = SyncService(fs, profile, settings, sql)
-                    try:
-                        ss.check_login()
-                        top.start_sync(ss)
-                        app_main.refresh()
-                    except AppException as _app_ex:
-                        top.destroy()
-                        showwarning(APP_NAME, _app_ex)
-                    except Exception as _ex:
-                        top.destroy()
-                        showerror(APP_NAME, _ex)
+                with ActivityLog() as activity_log:
+                    with Sql(activity_log) as sql:
+                        ss = SyncService(fs, profile, settings, sql, activity_log)
+                        try:
+                            ss.check_login()
+                            top.start_sync(ss)
+                            app_main.refresh()
+                        except AppException as _app_ex:
+                            top.destroy()
+                            showwarning(APP_NAME, _app_ex)
+                        except Exception as _ex:
+                            top.destroy()
+                            showerror(APP_NAME, _ex)
 
             Thread(target=_sync_service_in_bg).start()
 

@@ -5,6 +5,7 @@ from typing import Optional
 import pythoncom
 import win32com.client
 
+from activity_logs import ActivityLog, ActivityLogMock
 from sql import util
 from sql.master import MasterMeta
 from sql.master.agent import Agent
@@ -18,14 +19,14 @@ from sql.master.stock_trans import StockTrans
 from sql.trans.invoice_dtl import InvoiceDTL
 from sql.trans.outstanding_sales_order import OutstandingSalesOrder
 from sql.trans.sales_order import SalesOrder
-from ui.AppException import AppException
 
 _LOAD_MASTER_PAGE_SIZE = 50
 
 
 class Sql:
-    def __init__(self):
+    def __init__(self, log: ActivityLog = None):
         self._dispatch()
+        self._log = log or ActivityLogMock()
 
     def __enter__(self):
         return self
@@ -41,11 +42,14 @@ class Sql:
 
     def verify_login(self, company_name: str):
         if self.com.IsLogin:
+            self._log.i('sql.verify_login query agent')
             rpt_obj = self.com.RptObjects.Find('Common.Agent.RO')
             rpt_obj.CalculateReport()
+            self._log.i('sql.verify_login query company profiles')
             data_set = rpt_obj.DataSets.Find("cdsProfile")
             company_profile = None
             for data in util.loop_data_sets(data_set):
+                self._log.i('sql.verify_login got company profile')
                 company_profile = CompanyProfile(data)
             if company_profile and company_profile.company_name == company_name:
                 return
@@ -55,9 +59,11 @@ class Sql:
         query = f'SELECT COUNT(*) AS Total FROM {table_name}'
         if last_modified is not None:
             query += f' WHERE LastModified > {last_modified}'
+        self._log.i('sql.count_master_data query total')
         data_set = self.com.DBManager.NewDataSet(query)
         to_return = None
         for data in util.loop_data_sets(data_set):
+            self._log.i('sql.count_master_data got total')
             to_return = MasterMeta(data).total
         return to_return or 0
 
@@ -70,22 +76,28 @@ class Sql:
             if order_by_last_modified:
                 query += ' ORDER BY LastModified'
             query += f' ROWS {offset} TO {offset + _LOAD_MASTER_PAGE_SIZE}'
+            self._log.i('sql.get_master_data query master data')
             data_set = self.com.DBManager.NewDataSet(query)
             for data in util.loop_data_sets(data_set):
+                self._log.i('sql.get_master_data got master data')
                 yield converter(data)
             offset += _LOAD_MASTER_PAGE_SIZE + 1
 
     def get_master_data_by_code(self, table_name, code, converter):
         query = f"SELECT * FROM {table_name} WHERE Code = '{code}'"
+        self._log.i('sql.get_master_data_by_code query data')
         data_set = self.com.DBManager.NewDataSet(query)
         to_return = None
         for data in util.loop_data_sets(data_set):
+            self._log.i('sql.get_master_data_by_code got data')
             to_return = converter(data)
         return to_return
 
     def get_master_detail_by_code(self, table_name, code, converter):
+        self._log.i('sql.get_master_detail_by_code query data')
         data_set = self.com.DBManager.NewDataSet(f"SELECT * FROM {table_name} WHERE CODE='{code}'")
         for data in util.loop_data_sets(data_set):
+            self._log.i('sql.get_master_detail_by_code got data')
             yield converter(data)
 
     def get_st_trans(self, since_trans_no=None):
@@ -93,15 +105,19 @@ class Sql:
         if since_trans_no is not None:
             query += f' WHERE TransNo > {since_trans_no}'
         query += ' ORDER BY TRANSNO'
+        self._log.i('sql.get_st_trans query data')
         data_set = self.com.DBManager.NewDataSet(query)
         for data in util.loop_data_sets(data_set):
+            self._log.i('sql.get_st_trans got result')
             yield StockTrans(data)
 
     def get_sl_so(self, doc_code: str) -> Optional[SalesOrder]:
         query = f"SELECT * FROM SL_SO WHERE DocNo='{doc_code}'"
+        self._log.i('sql.get_sl_so query data')
         data_set = self.com.DBManager.NewDataSet(query)
         sales_order = None
         for data in util.loop_data_sets(data_set):
+            self._log.i('sql.get_sl_so got data')
             sales_order = SalesOrder(data)
         return sales_order
 

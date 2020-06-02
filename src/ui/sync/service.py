@@ -3,6 +3,7 @@ import time
 import psutil
 from google.cloud import firestore
 
+from activity_logs import ActivityLog
 from server import util
 from constants import SalesOrderStatus
 from settings import Settings
@@ -23,18 +24,21 @@ def is_sql_running() -> bool:
 
 
 class SyncService:
-    def __init__(self, fs, profile: Profile, settings: Settings, sql: Sql):
+    def __init__(self, fs, profile: Profile, settings: Settings, sql: Sql, log: ActivityLog):
         self._fs = fs
         self._sql = sql
+        self._log = log
         self._profile = profile
         self._company_code = profile.company_code
         self._settings = settings
 
     def check_login(self):
+        self._log.i('service.check_login', self._profile.company_name)
         self._sql.verify_login(self._profile.company_name)
 
     def upload_stock_items(self):
         # Stock items
+        self._log.i('service.upload_stock_items start')
         last_modified = self._settings.get_prop(self._company_code, _ST_ITEM_LAST_MODIFIED) or None
         table_name = 'ST_ITEM'
         uom_table_name = 'ST_ITEM_UOM'
@@ -44,7 +48,9 @@ class SyncService:
             stock_code = stock.code
             stock.uom = list(self._sql.get_master_detail_by_code(
                 uom_table_name, stock_code, lambda data: StockItemUom(data)))
+            self._log.i('service.upload_stock_items call fs.document()')
             doc_ref = self._fs.document(f'data/{self._company_code}/items/{util.esc_key(stock_code)}')
+            self._log.i('service.upload_stock_items done fs.document()')
             doc_ref.set(stock.to_dict())
 
             if util.is_last_modified_not_empty(stock.last_modified):
@@ -122,6 +128,7 @@ class SyncService:
 
         @firestore.transactional
         def _update(transaction, so_code, so_dict):
+            self._log.i('service.sync_sales_orders._update start')
             item_quantities = _get_item_quantities(so_dict['items'])
             to_save = []
             for item_code, item_quantity in item_quantities.items():
@@ -138,41 +145,41 @@ class SyncService:
 
             so_ref = self._fs.document(f'data/{self._company_code}/salesOrders/{so_code}')
             transaction.set(so_ref, so_dict)
+            self._log.i('service.sync_sales_orders._update complete')
 
-        with open('sales_order_log.txt', mode='w') as log:
-            collection = f'data/{self._company_code}/salesOrders'
-            all_docs = [doc.to_dict() for doc in self._fs.collection(collection).where(
-                'status', '==', SalesOrderStatus.Open.value).order_by('created_on').stream()]
-            print(collection, "total", len(all_docs), file=log)
-            for sales_order_dict in all_docs:
-                sales_order_code = sales_order_dict['code']
-                print('Server:', sales_order_code, file=log)
-                yield sales_order_dict
+        self._log.i('service.sync_sales_orders start')
+        collection = f'data/{self._company_code}/salesOrders'
+        all_docs = [doc.to_dict() for doc in self._fs.collection(collection).where(
+            'status', '==', SalesOrderStatus.Open.value).order_by('created_on').stream()]
+        self._log.i(f'service.sync_sales_orders found {len(all_docs)} sales orders to sync')
+        for sales_order_dict in all_docs:
+            sales_order_code = sales_order_dict['code']
+            yield sales_order_dict
 
-                sales_order = self._sql.get_sl_so(sales_order_code)
-                if sales_order:
-                    if sales_order.is_cancelled:
-                        sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
-                        _update(self._fs.transaction(), sales_order_code, sales_order_dict)
-                        print('Cancelled', file=log)
-                        yield 'cancelled'
-                        continue
-                    else:
-                        outstanding_sales_order = self._sql.get_sl_invoice_dtl(sales_order_code)
-                        if outstanding_sales_order:
-                            sales_order_dict['status'] = SalesOrderStatus.Transferred.value
-                            _update(self._fs.transaction(), sales_order_code, sales_order_dict)
-                            print('Transferred', file=log)
-                            yield 'transferred'
-                            continue
-                        print('NoChange', file=log)
-                        yield 'nochange'
-                        continue
-                else:
-                    self._sql.set_sales_order(sales_order_dict)
-                    print('New', file=log)
-                    yield 'added'
+            sales_order = self._sql.get_sl_so(sales_order_code)
+            if sales_order:
+                if sales_order.is_cancelled:
+                    sales_order_dict['status'] = SalesOrderStatus.Cancelled.value
+                    _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                    yield 'cancelled'
                     continue
+                else:
+                    self._log.i('service.sync_sales_orders call sql.get_sl_invoice_dtl')
+                    outstanding_sales_order = self._sql.get_sl_invoice_dtl(sales_order_code)
+                    self._log.i('service.sync_sales_orders complete sql.get_sl_invoice_dtl')
+                    if outstanding_sales_order:
+                        sales_order_dict['status'] = SalesOrderStatus.Transferred.value
+                        _update(self._fs.transaction(), sales_order_code, sales_order_dict)
+                        yield 'transferred'
+                        continue
+                    yield 'nochange'
+                    continue
+            else:
+                self._log.i('service.sync_sales_orders call sql.set_sales_order')
+                self._sql.set_sales_order(sales_order_dict)
+                self._log.i('service.sync_sales_orders complete sql.set_sales_order')
+                yield 'added'
+                continue
 
     def upload_aging_report(self):
         collection = f'data/{self._company_code}'
