@@ -28,7 +28,7 @@ class ViewModel:
         self._st = st
         self._settings = settings
 
-        self.profiles = [Profile(profile_data) for profile_data in settings.list_profiles()]
+        self.profiles = [Profile(profile_data.to_dict()) for profile_data in settings.list_profiles()]
         self.current_profile = self.profiles[0]  # type: Profile
         self.items = self._get_items()
 
