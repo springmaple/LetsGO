@@ -182,13 +182,13 @@ class SyncService:
                 continue
 
     def upload_aging_report(self):
-        collection = f'data/{self._company_code}'
-        doc = self._fs.document(collection)
-
         rpt_docs = []
         for index, rpt_doc in enumerate(aging_report.get_aging_report(self._sql), start=1):
             rpt_docs.append(rpt_doc.to_dict())
             yield rpt_doc
+
+        collection = f'data/{self._company_code}'
+        doc = self._fs.document(collection)
         doc.set({
             'aging_report': {
                 'updated_on': time.time(),
