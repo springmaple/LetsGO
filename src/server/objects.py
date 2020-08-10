@@ -14,4 +14,6 @@ class Item(BaseObject):
     def __init__(self, data):
         self.code = data['code']
         self.desc = data['description']
-        self.keywords = data['keywords']
+        self.created_on = data['created_on']
+        self.quantity = data['quantity']
+        self.stock_group_code = data['stock_group_code']

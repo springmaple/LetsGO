@@ -2,11 +2,8 @@ CacheControl==0.12.6
 cachetools==4.1.0
 certifi==2020.4.5.1
 chardet==3.0.4
-click==7.1.2
 enum34==1.1.10
 firebase-admin==4.3.0
-Flask==1.1.2
-Flask-Cors==3.0.8
 futures==3.1.1
 google-api-core==1.17.0
 google-api-python-client==1.8.4
@@ -20,9 +17,6 @@ googleapis-common-protos==1.51.0
 grpcio==1.29.0
 httplib2==0.18.1
 idna==2.9
-itsdangerous==1.1.0
-Jinja2==2.11.2
-MarkupSafe==1.1.1
 msgpack==1.0.0
 Pillow==7.1.2
 protobuf==3.12.2
@@ -34,8 +28,6 @@ pytz==2020.1
 pywin32==227
 requests==2.23.0
 rsa==4.0
-six==1.15.0
 tqdm==4.46.0
 uritemplate==3.0.1
 urllib3==1.25.9
-Werkzeug==1.0.1
