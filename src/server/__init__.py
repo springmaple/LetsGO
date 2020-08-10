@@ -24,8 +24,7 @@ sync_sql_thread = None
 @app.route('/get_profiles')
 def get_profiles():
     settings = Settings()
-    profiles = (Profile(profile_data) for profile_data in settings.list_profiles())
-    return jsonify([profile.to_dict() for profile in profiles])
+    return jsonify([profile.to_dict() for profile in settings.list_profiles()])
 
 
 @app.route('/get_items')
