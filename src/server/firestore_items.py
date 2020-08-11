@@ -36,6 +36,6 @@ class FirestoreItems:
         for doc in self.fs.collection(f'data/{self.company_code}/items').stream():
             item_dict = doc.to_dict()
             data.append(item_dict)
-            yield item_dict
+            yield Item(item_dict)
         with open(cache, mode='w') as f:
             json.dump(data, f)
