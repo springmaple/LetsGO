@@ -8,13 +8,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='quarto', add_help=False)
     parser.add_argument('command', type=str, help='Command to run')
     parser.add_argument('-code', type=str, required=False, default='', help='Company profile code')
+    parser.add_argument('-item_code', type=str, required=False, default='', help='Item code')
     args = parser.parse_args()
 
     _command = args.command.lower()
 
     COMMANDS = {
         "get_profiles": get_profiles,
-        "get_items": get_items
+        "get_items": get_items,
+        "get_photo": get_photo
     }
 
     fn = COMMANDS[_command]

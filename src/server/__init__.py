@@ -1,10 +1,14 @@
+import os
 from queue import Queue
 from threading import Lock
 
+from constants import TMP_DIR
+from firestore import get_firebase_storage
 from server import util
 from server.firestore_items import FirestoreItems
 from server.objects import Profile, Item
 from server.sql_acc_sync import SqlAccSynchronizer
+from server.util import esc_key
 from settings import Settings
 
 event_queue = Queue()
@@ -19,22 +23,24 @@ def get_profiles():
 
 
 def get_items(code):
-    """Get stock items"""
+    """Get stock items
+    `code` is the company code."""
     items = FirestoreItems(code).get_items()
     return [item.to_dict() for item in items]
 
-# @app.route('/get_photo')
-# def get_photo():
-#     company_code = request.args.get('company_code')
-#     item_code = util.esc_key(request.args.get('item_code'))
-#     storage = get_firebase_storage()
-#     blob = storage.get_blob(f'{company_code}/{item_code}.webp')
-#     if not blob:
-#         return abort(404)
-#     blob.download_to_filename(os.path.join(TMP_DIR, 'dl.webp'))
-#     return get_file(TMP_DIR, 'dl.webp')
-#
-#
+
+def get_photo(code, item_code):
+    """Get photo base64 string."""
+    storage = get_firebase_storage()
+    blob = storage.get_blob(f'{code}/{esc_key(item_code)}.webp')
+    if not blob:
+        return {'b64_photo': None}
+    image_path = os.path.join(TMP_DIR, 'dl.webp')
+    blob.download_to_filename(image_path)
+    import base64
+    with open(image_path, mode='rb') as f:
+        return {'b64_photo': str(base64.encodebytes(f.read()), "utf-8")}
+
 # @app.route('/set_photo')
 # def set_photo():
 #     pass
