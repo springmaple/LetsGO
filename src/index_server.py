@@ -9,6 +9,7 @@ if __name__ == '__main__':
     parser.add_argument('command', type=str, help='Command to run')
     parser.add_argument('-code', type=str, required=False, default='', help='Company profile code')
     parser.add_argument('-item_code', type=str, required=False, default='', help='Item code')
+    parser.add_argument('-file', type=str, required=False, default='', help='File path')
     args = parser.parse_args()
 
     _command = args.command.lower()
@@ -16,7 +17,8 @@ if __name__ == '__main__':
     COMMANDS = {
         "get_profiles": get_profiles,
         "get_items": get_items,
-        "get_photo": get_photo
+        "get_photo": get_photo,
+        "set_photo": set_photo,
     }
 
     fn = COMMANDS[_command]

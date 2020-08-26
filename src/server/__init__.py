@@ -1,3 +1,4 @@
+import base64
 import os
 from queue import Queue
 from threading import Lock
@@ -8,7 +9,7 @@ from server import util
 from server.firestore_items import FirestoreItems
 from server.objects import Profile, Item
 from server.sql_acc_sync import SqlAccSynchronizer
-from server.util import esc_key
+from server.util import esc_key, to_webp
 from settings import Settings
 
 event_queue = Queue()
@@ -37,15 +38,19 @@ def get_photo(code, item_code):
         return {'b64_photo': None}
     image_path = os.path.join(TMP_DIR, 'dl.webp')
     blob.download_to_filename(image_path)
-    import base64
     with open(image_path, mode='rb') as f:
-        return {'b64_photo': str(base64.encodebytes(f.read()), "utf-8")}
+        return {'b64_photo': str(base64.encodebytes(f.read()), 'utf-8')}
 
-# @app.route('/set_photo')
-# def set_photo():
-#     pass
-#
-#
+
+def set_photo(code, item_code, file):
+    """Set photo"""
+    storage = get_firebase_storage()
+    converted = to_webp(file)
+    blob = storage.blob(f'{code}/{util.esc_key(item_code)}.webp')
+    blob.upload_from_filename(filename=converted)
+    with open(converted, mode='rb') as f:
+        return {'b64_photo': str(base64.encodebytes(f.read()), 'utf-8')}
+
 # @app.route('/sync_sql_acc')
 # def sync_sql_acc():
 #     global sync_sql_thread
