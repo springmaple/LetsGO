@@ -51,6 +51,14 @@ def set_photo(code, item_code, file):
     with open(converted, mode='rb') as f:
         return {'b64_photo': str(base64.encodebytes(f.read()), 'utf-8')}
 
+
+def delete_photo(code, item_code):
+    """Delete photo"""
+    storage = get_firebase_storage()
+    blob = storage.blob(f'{code}/{util.esc_key(item_code)}.webp')
+    blob.delete()
+    return {'b64_photo': None}
+
 # @app.route('/sync_sql_acc')
 # def sync_sql_acc():
 #     global sync_sql_thread

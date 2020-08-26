@@ -19,6 +19,7 @@ if __name__ == '__main__':
         "get_items": get_items,
         "get_photo": get_photo,
         "set_photo": set_photo,
+        "delete_photo": delete_photo,
     }
 
     fn = COMMANDS[_command]
