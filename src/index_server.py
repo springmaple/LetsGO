@@ -1,6 +1,7 @@
 import argparse
 import inspect
 import json
+import types
 
 from server import *
 
@@ -20,9 +21,15 @@ if __name__ == '__main__':
         "get_photo": get_photo,
         "set_photo": set_photo,
         "delete_photo": delete_photo,
+        "sync_sql_acc": sync_sql_acc,
     }
 
     fn = COMMANDS[_command]
     fn_args = [getattr(args, arg_key).lower() for arg_key in inspect.getfullargspec(fn).args]
+
     result = fn(*fn_args)
-    print(json.dumps(result))
+    if isinstance(result, types.GeneratorType):
+        for r in result:
+            print(json.dumps(r))
+    else:
+        print(json.dumps(result))

@@ -1,7 +1,6 @@
 import base64
 import os
-from queue import Queue
-from threading import Lock
+from threading import Thread
 
 from constants import TMP_DIR
 from firestore import get_firebase_storage
@@ -11,10 +10,6 @@ from server.objects import Profile, Item
 from server.sql_acc_sync import SqlAccSynchronizer
 from server.util import esc_key, to_webp
 from settings import Settings
-
-event_queue = Queue()
-lock = Lock()
-sync_sql_thread = None
 
 
 def get_profiles():
@@ -59,26 +54,13 @@ def delete_photo(code, item_code):
     blob.delete()
     return {'b64_photo': None}
 
-# @app.route('/sync_sql_acc')
-# def sync_sql_acc():
-#     global sync_sql_thread
-#     with lock:
-#         if sync_sql_thread and sync_sql_thread.is_alive():
-#             return
-#
-#         company_code = request.args.get('company_code')
-#         sql_acc_synchronizer = SqlAccSynchronizer(company_code)
-#
-#         def sync():
-#             try:
-#                 for data in sql_acc_synchronizer.start_sync():
-#                     event_queue.put(('sync', data))
-#                 FirestoreItems(company_code).delete_cache()
-#             except Exception as ex:
-#                 event_queue.put(('sync', {'type': 'error', 'data': str(ex)}))
-#             else:
-#                 event_queue.put(('sync', {'type': 'complete'}))
-#
-#         sync_sql_thread = Thread(target=sync)
-#         sync_sql_thread.start()
-#         return '', 204
+
+def sync_sql_acc(code):
+    sql_acc_synchronizer = SqlAccSynchronizer(code)
+    try:
+        yield from sql_acc_synchronizer.start_sync()
+        FirestoreItems(code).delete_cache()
+    except Exception as ex:
+        yield {'type': 'error', 'error': str(ex)}
+    else:
+        yield {'type': 'complete'}

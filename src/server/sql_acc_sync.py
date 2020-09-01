@@ -38,24 +38,24 @@ class SqlAccSynchronizer:
             ss.check_login()
 
             for item in ss.upload_stock_items():
-                yield {'type': 'item', 'data': item}
+                yield {'type': 'item', 'item': item}
 
             for item_group in ss.upload_item_groups():
-                yield {'type': 'item_group', 'data': item_group}
+                yield {'type': 'item_group', 'item_group': item_group}
 
             for customer in ss.upload_customers():
-                yield {'type': 'customer', 'data': customer}
+                yield {'type': 'customer', 'customer': customer}
 
             for agent in ss.upload_agents():
-                yield {'type': 'agent', 'data': agent}
+                yield {'type': 'agent', 'agent': agent}
 
             for update in ss.sync_sales_orders():
                 # update: added, transferred, cancelled, nochange
                 if type(update) != str:
-                    yield {'type': 'sales_order', 'data': update}
+                    yield {'type': 'sales_order', 'sales_order': update}
 
             for report in ss.upload_aging_report():
-                yield {'type': 'aging_report', 'data': report}
+                yield {'type': 'aging_report', 'aging_report': report}
 
 
 class _SyncService:
