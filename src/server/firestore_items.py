@@ -26,6 +26,9 @@ class FirestoreItems:
         if os.path.exists(cache):
             os.unlink(cache)
 
+    def update_cache(self):
+        list(self._download_cache_items())
+
     def _get_cache_items_path(self):
         return os.path.join(TMP_DIR, self.company_code, 'items.json')
 

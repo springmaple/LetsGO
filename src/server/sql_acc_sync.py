@@ -38,24 +38,25 @@ class SqlAccSynchronizer:
             ss.check_login()
 
             for item in ss.upload_stock_items():
-                yield {'type': 'item', 'item': item}
+                yield {'type': 'item', 'item': item.to_dict()}
 
             for item_group in ss.upload_item_groups():
-                yield {'type': 'item_group', 'item_group': item_group}
+                yield {'type': 'item_group', 'item_group': item_group.to_dict()}
 
             for customer in ss.upload_customers():
-                yield {'type': 'customer', 'customer': customer}
+                yield {'type': 'customer', 'customer': customer.to_dict()}
 
             for agent in ss.upload_agents():
-                yield {'type': 'agent', 'agent': agent}
+                yield {'type': 'agent', 'agent': agent.to_dict()}
 
             for update in ss.sync_sales_orders():
                 # update: added, transferred, cancelled, nochange
                 if type(update) != str:
                     yield {'type': 'sales_order', 'sales_order': update}
 
-            for report in ss.upload_aging_report():
-                yield {'type': 'aging_report', 'aging_report': report}
+            yield {'type': 'aging_report', 'aging_report': 'Started!'}
+            ss.upload_aging_report()
+            yield {'type': 'aging_report', 'aging_report': 'Completed!'}
 
 
 class _SyncService:
@@ -214,10 +215,7 @@ class _SyncService:
         collection = f'data/{self._company_code}'
         doc = self._fs.document(collection)
 
-        rpt_docs = []
-        for index, rpt_doc in enumerate(aging_report.get_aging_report(self._sql), start=1):
-            rpt_docs.append(rpt_doc.to_dict())
-            yield rpt_doc
+        rpt_docs = [rpt_doc.to_dict() for rpt_doc in aging_report.get_aging_report(self._sql)]
         doc.set({
             'aging_report': {
                 'updated_on': time.time(),

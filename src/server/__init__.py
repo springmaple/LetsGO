@@ -1,6 +1,5 @@
 import base64
 import os
-from threading import Thread
 
 from constants import TMP_DIR
 from firestore import get_firebase_storage
@@ -59,7 +58,12 @@ def sync_sql_acc(code):
     sql_acc_synchronizer = SqlAccSynchronizer(code)
     try:
         yield from sql_acc_synchronizer.start_sync()
-        FirestoreItems(code).delete_cache()
+
+        yield {'type': 'update_cache', 'update_cache': 'Started!'}
+        fs_items = FirestoreItems(code)
+        fs_items.delete_cache()
+        fs_items.update_cache()
+        yield {'type': 'update_cache', 'update_cache': 'Completed!'}
     except Exception as ex:
         yield {'type': 'error', 'error': str(ex)}
     else:

@@ -17,7 +17,7 @@ class Settings:
 
     def get_profile(self, company_code: str) -> Profile:
         for profile in self.list_profiles():
-            if profile['company_code'] == company_code:
+            if profile.company_code == company_code:
                 return profile
         raise Exception(f'Profile for "{company_code}" not found.')
 
