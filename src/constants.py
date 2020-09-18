@@ -3,7 +3,7 @@ import os
 import tempfile
 
 APP_NAME = "Let'sGO"
-APP_VERSION = 'v1.1.8'
+APP_VERSION = 'v1.1.9'
 TMP_DIR = os.path.join(os.path.abspath(tempfile.gettempdir()), 'LetsGO')
 
 ACTIVITY_LOGS_DIR = os.path.join(TMP_DIR, 'logs')
