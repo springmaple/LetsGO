@@ -1,8 +1,9 @@
 import datetime
 import decimal
 import json
+import re
+import subprocess
 
-from server import util
 from sql.keywords import Keywords
 
 
@@ -51,7 +52,7 @@ class Entity:
 
     def _get_date(self, field_name):
         if not self._date_format:
-            self._date_format = util.guess_system_date_format()
+            self._date_format = guess_system_date_format()
         val = self._data.FindField(field_name).AsString
         dt_obj = datetime.datetime.strptime(str(val), self._date_format)
         return dt_obj.date()
@@ -66,3 +67,17 @@ class Entity:
         return ', '.join("%s: %s" % item
                          for item in attrs.items()
                          if not item[0].startswith('_'))
+
+
+def guess_system_date_format():
+    """https://superuser.com/a/951984"""
+    output = subprocess.check_output(['reg', 'query', r'HKCU\Control Panel\International', '-v', 'sShortDate'])
+    output = output.decode()
+    for line in output.splitlines():
+        partitions = line.split()
+        if len(partitions) == 3 and partitions[0] == 'sShortDate':
+            date_format = partitions[2]
+            date_format = re.sub('d+', '%d', date_format, flags=re.IGNORECASE)
+            date_format = re.sub('m+', '%m', date_format, flags=re.IGNORECASE)
+            return re.sub('y+', '%Y', date_format, flags=re.IGNORECASE)
+    return '%d/%m/%Y'
