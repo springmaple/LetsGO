@@ -3,7 +3,14 @@ import inspect
 import json
 import types
 
+from constants import ACTIVITY_LOGS_DIR
 from server import *
+
+
+def open_logs():
+    os.system(f'explorer.exe "{ACTIVITY_LOGS_DIR}"')
+    return {'status': 'ok'}
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='quarto', add_help=False)
@@ -22,6 +29,7 @@ if __name__ == '__main__':
         "set_photo": set_photo,
         "delete_photo": delete_photo,
         "sync_sql_acc": sync_sql_acc,
+        "open_logs": open_logs
     }
 
     fn = COMMANDS[_command]
