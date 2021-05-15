@@ -83,6 +83,11 @@ class Sql:
                 yield converter(data)
             offset += _LOAD_MASTER_PAGE_SIZE + 1
 
+    def get_stock_item_codes(self):
+        query = f"SELECT Code FROM ST_ITEM"
+        data_set = self.com.DBManager.NewDataSet(query)
+        return [data.FindField("Code").AsString for data in util.loop_data_sets(data_set)]
+
     def get_master_data_by_code(self, table_name, code, converter):
         query = f"SELECT * FROM {table_name} WHERE Code = '{code}'"
         self._log.i('sql.get_master_data_by_code query data')

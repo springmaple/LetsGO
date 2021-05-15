@@ -40,6 +40,9 @@ class SqlAccSynchronizer:
             for item in ss.upload_stock_items():
                 yield {'type': 'item', 'item': item.to_dict()}
 
+            for item_code in ss.delete_stock_items():
+                yield {'type': 'delete_item', 'deleted_item_code': item_code}
+
             for item_group in ss.upload_item_groups():
                 yield {'type': 'item_group', 'item_group': item_group.to_dict()}
 
@@ -72,17 +75,21 @@ class _SyncService:
 
     def upload_stock_items(self):
         # Stock items
+        def upload_stock_item(stock_):
+            stock_code = stock_.code
+            stock_.uom = list(self._sql.get_master_detail_by_code(
+                uom_table_name, stock_code, lambda data: StockItemUom(data)))
+            doc_ref = self._fs.document(f'data/{self._company_code}/items/{util.esc_key(stock_code)}')
+            doc_ref.set(stock_.to_dict())
+            return stock_
+
         last_modified = self._settings.get_prop(self._company_code, _ST_ITEM_LAST_MODIFIED) or None
         table_name = 'ST_ITEM'
         uom_table_name = 'ST_ITEM_UOM'
         total = self._sql.count_master_data(table_name, last_modified)
         item_code_updated = set()
         for stock in self._sql.get_master_data(table_name, total, lambda data: StockItem(data), last_modified):
-            stock_code = stock.code
-            stock.uom = list(self._sql.get_master_detail_by_code(
-                uom_table_name, stock_code, lambda data: StockItemUom(data)))
-            doc_ref = self._fs.document(f'data/{self._company_code}/items/{util.esc_key(stock_code)}')
-            doc_ref.set(stock.to_dict())
+            yield upload_stock_item(stock)
 
             if util.is_last_modified_not_empty(stock.last_modified):
                 self._settings.set_prop(self._company_code, _ST_ITEM_LAST_MODIFIED, stock.last_modified)
@@ -99,13 +106,17 @@ class _SyncService:
             if should_update:
                 stock = self._sql.get_master_data_by_code(table_name, stock_trans.item_code,
                                                           lambda data: StockItem(data))
-                stock_code = stock.code
-                stock.uom = list(self._sql.get_master_detail_by_code(
-                    uom_table_name, stock_code, lambda data: StockItemUom(data)))
-                doc_ref = self._fs.document(f'data/{self._company_code}/items/{util.esc_key(stock_code)}')
-                doc_ref.set(stock.to_dict())
-                yield stock
+                yield upload_stock_item(stock)
             self._settings.set_prop(self._company_code, _ST_TRANS_LAST_TRANS_NO, stock_trans.trans_no)
+
+    def delete_stock_items(self):
+        # Delete stock items that already removed in SQL from server.
+        active_stock_item_codes = set(map(lambda code: util.esc_key(code), self._sql.get_stock_item_codes()))
+        server_item_codes = [doc.id for doc in self._fs.collection(f'data/{self._company_code}/items').stream()]
+        for server_item_code in server_item_codes:
+            if server_item_code not in active_stock_item_codes:
+                self._fs.document(f'data/{self._company_code}/items/{server_item_code}').delete()
+                yield server_item_code
 
     def upload_item_groups(self):
         # Item groups
