@@ -10,6 +10,7 @@ from settings import Settings
 from sql import StockItem, StockItemUom, StockItemGroup, Customer, CustomerBranch, Agent, Sql
 from sql.query import aging_report
 
+_LAST_SYNC_SQL_TIMESTAMP = 'last_sync_sql_timestamp'
 _LAST_SALES_ORDER_TIMESTAMP = 'last_sales_order_timestamp'
 _ST_ITEM_LAST_MODIFIED = 'last_modified_st_item'
 _ST_GROUP_LAST_MODIFIED = 'last_modified_st_group'
@@ -60,6 +61,8 @@ class SqlAccSynchronizer:
             yield {'type': 'aging_report', 'aging_report': 'Started!'}
             ss.upload_aging_report()
             yield {'type': 'aging_report', 'aging_report': 'Completed!'}
+
+        settings.set_prop(self.company_code, _LAST_SYNC_SQL_TIMESTAMP, int(time.time()))
 
 
 class _SyncService:

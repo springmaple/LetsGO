@@ -6,7 +6,7 @@ from firestore import get_firebase_storage
 from server import util
 from server.firestore_items import FirestoreItems
 from server.objects import Profile
-from server.sql_acc_sync import SqlAccSynchronizer
+from server.sql_acc_sync import SqlAccSynchronizer, _LAST_SYNC_SQL_TIMESTAMP
 from server.util import esc_key, to_webp
 from settings import Settings
 
@@ -67,3 +67,9 @@ def sync_sql_acc(code):
         yield {'type': 'error', 'error': str(ex)}
     else:
         yield {'type': 'complete'}
+
+
+def get_last_sync_sql_timestamp(code):
+    settings = Settings()
+    timestamp = settings.get_prop(code, _LAST_SYNC_SQL_TIMESTAMP)
+    return {'timestamp': timestamp}  # return 0 if value is not set
