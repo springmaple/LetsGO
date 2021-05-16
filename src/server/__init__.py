@@ -5,7 +5,7 @@ from constants import TMP_DIR
 from firestore import get_firebase_storage
 from server import util
 from server.firestore_items import FirestoreItems
-from server.objects import Profile, Item
+from server.objects import Profile
 from server.sql_acc_sync import SqlAccSynchronizer
 from server.util import esc_key, to_webp
 from settings import Settings
@@ -20,8 +20,7 @@ def get_profiles():
 def get_items(code):
     """Get stock items
     `code` is the company code."""
-    items = FirestoreItems(code).get_items()
-    return [item.to_dict() for item in items]
+    return FirestoreItems(code).get_items()
 
 
 def get_photo(code, item_code):
