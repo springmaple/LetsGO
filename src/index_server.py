@@ -30,6 +30,7 @@ if __name__ == '__main__':
         "delete_photo": delete_photo,
         "sync_sql_acc": sync_sql_acc,
         "get_last_sync_sql_timestamp": get_last_sync_sql_timestamp,
+        "get_area_codes": get_area_codes,
         "open_logs": open_logs
     }
 

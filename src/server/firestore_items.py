@@ -10,8 +10,12 @@ class FirestoreItems:
         self.company_code = company_code
         self.fs = get_firestore_instance()
 
+    def get_customers(self):
+        """Get customers from Firestore."""
+        return [doc.to_dict() for doc in self.fs.collection(f'data/{self.company_code}/customers').stream()]
+
     def get_items(self):
-        """Get stock items from Firestore."""
+        """Get stock items from Firestore; results are cached."""
         cache = self._get_cache_items_path()
         if os.path.exists(cache):
             with open(cache, mode='r') as f:

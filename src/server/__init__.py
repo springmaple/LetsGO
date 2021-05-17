@@ -73,3 +73,8 @@ def get_last_sync_sql_timestamp(code):
     settings = Settings()
     timestamp = settings.get_prop(code, _LAST_SYNC_SQL_TIMESTAMP)
     return {'timestamp': timestamp}  # return 0 if value is not set
+
+
+def get_area_codes(code):
+    areas = [item.get('area', None) for item in FirestoreItems(code).get_customers()]
+    return sorted(list(filter(lambda area: area, set(areas))))
