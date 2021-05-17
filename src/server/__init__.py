@@ -78,3 +78,16 @@ def get_last_sync_sql_timestamp(code):
 def get_area_codes(code):
     areas = [item.get('area', None) for item in FirestoreItems(code).get_customers()]
     return sorted(list(filter(lambda area: area, set(areas))))
+
+
+def set_settings_east_malaysia_uom(code, uom_suffix, uom_areas):
+    value = {
+        'uom_suffix': uom_suffix,
+        'uom_areas': str(uom_areas).split(',')
+    }
+    return FirestoreItems(code).set_settings('east_malaysia_uom', value)
+
+
+def get_settings_east_malaysia_uom(code):
+    """Return null if settings not exists."""
+    return FirestoreItems(code).get_settings('east_malaysia_uom')

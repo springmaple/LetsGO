@@ -18,6 +18,9 @@ if __name__ == '__main__':
     parser.add_argument('-code', type=str, required=False, default='', help='Company profile code')
     parser.add_argument('-item_code', type=str, required=False, default='', help='Item code')
     parser.add_argument('-file', type=str, required=False, default='', help='File path')
+    parser.add_argument('-uom_suffix', type=str, required=False, default='', help='UOM suffix for regional UOM')
+    parser.add_argument('-uom_areas', type=str, required=False, default='',
+                        help='Comma separated area codes for regional UOM')
     args = parser.parse_args()
 
     _command = args.command.lower()
@@ -31,6 +34,8 @@ if __name__ == '__main__':
         "sync_sql_acc": sync_sql_acc,
         "get_last_sync_sql_timestamp": get_last_sync_sql_timestamp,
         "get_area_codes": get_area_codes,
+        "set_settings_east_malaysia_uom": set_settings_east_malaysia_uom,
+        "get_settings_east_malaysia_uom": get_settings_east_malaysia_uom,
         "open_logs": open_logs
     }
 

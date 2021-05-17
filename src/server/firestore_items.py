@@ -23,12 +23,28 @@ class FirestoreItems:
         return self._download_cache_items()
 
     def delete_cache(self):
+        """Delete items cache."""
         cache = self._get_cache_items_path()
         if os.path.exists(cache):
             os.unlink(cache)
 
     def update_cache(self):
+        """Update items cache."""
         self._download_cache_items()
+
+    def set_settings(self, key, value):
+        """Set settings."""
+        settings_val = {key: value}
+        self.fs.document(f'settings/{self.company_code}').set(settings_val)
+        return settings_val[key]
+
+    def get_settings(self, key):
+        """Get settings."""
+        settings_val = self.fs.document(f'settings/{self.company_code}').get([key])
+        settings_val_dict = settings_val.to_dict()
+        if key in settings_val_dict:
+            return settings_val_dict[key]
+        return None
 
     def _get_cache_items_path(self):
         return os.path.join(TMP_DIR, self.company_code, 'items.json')
