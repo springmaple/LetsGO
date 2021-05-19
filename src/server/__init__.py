@@ -77,7 +77,7 @@ def get_last_sync_sql_timestamp(code):
 
 def get_area_codes(code):
     areas = [item.get('area', None) for item in FirestoreItems(code).get_customers()]
-    return sorted(list(filter(lambda area: area, set(areas))))
+    return {'area_codes': sorted(list(filter(lambda area: area, set(areas))))}
 
 
 def set_settings_east_malaysia_uom(code, uom_suffix, uom_areas):
