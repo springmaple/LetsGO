@@ -3,6 +3,7 @@ import inspect
 import json
 import types
 
+from activity_logs import ActivityLog, ActivityLogMock
 from constants import ACTIVITY_LOGS_DIR
 from server import *
 
@@ -12,7 +13,9 @@ def open_logs():
     return {'status': 'ok'}
 
 
-if __name__ == '__main__':
+def start(log: ActivityLog):
+    log = log or ActivityLogMock()
+
     parser = argparse.ArgumentParser(prog='quarto', add_help=False)
     parser.add_argument('command', type=str, help='Command to run')
     parser.add_argument('-code', type=str, required=False, default='', help='Company profile code')
@@ -40,7 +43,11 @@ if __name__ == '__main__':
     }
 
     fn = COMMANDS[_command]
-    fn_args = [getattr(args, arg_key).lower() for arg_key in inspect.getfullargspec(fn).args]
+    fn_args = [log if arg_key == 'log' else getattr(args, arg_key).lower()
+               for arg_key
+               in inspect.getfullargspec(fn).args]
+
+    log.i(fn.__name__, fn_args)
 
     result = fn(*fn_args)
     if isinstance(result, types.GeneratorType):
@@ -48,3 +55,12 @@ if __name__ == '__main__':
             print(json.dumps(r))
     else:
         print(json.dumps(result))
+
+
+if __name__ == '__main__':
+    with ActivityLog() as al:
+        try:
+            start(al)
+        except Exception as ex:
+            al.e(ex)
+            raise

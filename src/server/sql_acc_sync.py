@@ -3,6 +3,7 @@ import time
 import psutil
 from google.cloud import firestore
 
+from activity_logs import ActivityLog
 from constants import SalesOrderStatus
 from firestore import get_firestore_instance
 from server import Profile, util
@@ -26,7 +27,7 @@ class SqlAccSynchronizer:
     def __init__(self, company_code):
         self.company_code = company_code
 
-    def start_sync(self):
+    def start_sync(self, log: ActivityLog):
         if not _is_sql_acc_running():
             raise Exception('Please start SQL Account and login first.')
 
@@ -34,7 +35,7 @@ class SqlAccSynchronizer:
         settings = Settings()
         profile = settings.get_profile(self.company_code)  # type: Profile
 
-        with Sql() as sql:
+        with Sql(log) as sql:
             ss = _SyncService(fs, profile, settings, sql)
             ss.check_login()
 

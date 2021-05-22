@@ -53,10 +53,10 @@ def delete_photo(code, item_code):
     return {'b64_photo': None}
 
 
-def sync_sql_acc(code):
+def sync_sql_acc(code, log):
     sql_acc_synchronizer = SqlAccSynchronizer(code)
     try:
-        yield from sql_acc_synchronizer.start_sync()
+        yield from sql_acc_synchronizer.start_sync(log)
 
         yield {'type': 'update_cache', 'update_cache': 'Started!'}
         fs_items = FirestoreItems(code)
@@ -89,5 +89,5 @@ def set_settings_east_malaysia_uom(code, uom_suffix, uom_areas):
 
 
 def get_settings_east_malaysia_uom(code):
-    """Return null if settings not exists."""
-    return FirestoreItems(code).get_settings('east_malaysia_uom')
+    return (FirestoreItems(code).get_settings('east_malaysia_uom') or
+            {'uom_suffix': '', 'uom_areas': []})

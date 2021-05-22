@@ -7,7 +7,7 @@ from constants import ACTIVITY_LOGS_DIR
 class ActivityLog:
     def __init__(self):
         # Delete older log entries
-        entries_to_keep = 10
+        entries_to_keep = 5
         file_names = filter(lambda file: os.path.isfile(os.path.join(ACTIVITY_LOGS_DIR, file)),
                             os.listdir(ACTIVITY_LOGS_DIR))
         for file_name in list(file_names)[::-1][entries_to_keep:]:
@@ -18,9 +18,9 @@ class ActivityLog:
                 pass
 
     def __enter__(self):
-        log_name = datetime.now().strftime('%Y%m%d_%H%M%S')
+        log_name = datetime.now().strftime('%Y%m%d')
         log_path = os.path.join(ACTIVITY_LOGS_DIR, log_name + '.txt')
-        self._fs = open(log_path, mode='w')
+        self._fs = open(log_path, mode='a')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -28,13 +28,23 @@ class ActivityLog:
         self._fs.close()
 
     def i(self, *args):
-        dt = datetime.now().strftime('%H%M%S')
+        dt = datetime.now().strftime('%H:%M:%S')
         try:
             print(f'[{dt}] ', *args, file=self._fs, flush=True)
+        except:
+            pass
+
+    def e(self, ex):
+        dt = datetime.now().strftime('%H:%M:%S')
+        try:
+            print(f'[{dt}]', str(ex), file=self._fs, flush=True)
         except:
             pass
 
 
 class ActivityLogMock:
     def i(self, *args):
+        pass
+
+    def e(self, ex):
         pass
