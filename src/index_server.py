@@ -43,7 +43,7 @@ def start(log: ActivityLog):
     }
 
     fn = COMMANDS[_command]
-    fn_args = [log if arg_key == 'log' else getattr(args, arg_key).lower()
+    fn_args = [log if arg_key == 'log' else getattr(args, arg_key)
                for arg_key
                in inspect.getfullargspec(fn).args]
 
