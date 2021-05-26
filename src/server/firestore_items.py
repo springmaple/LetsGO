@@ -45,7 +45,7 @@ class FirestoreItems:
         """Get settings."""
         settings_val = self.fs.document(f'settings/{self.company_code}').get([key])
         settings_val_dict = settings_val.to_dict()
-        if key in settings_val_dict:
+        if settings_val_dict and key in settings_val_dict:
             return settings_val_dict[key]
         return None
 
